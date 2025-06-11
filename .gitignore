@@ -5,9 +5,9 @@ node_modules/
 # VS Code Config file
 .vscode/
 # VuePress Cache
-**/.vuepress/.cache/
+docs/.vuepress/.cache/
 # VuePress Temp
-**/.vuepress/.temp/
+docs/.vuepress/.temp/
 # VuePress Output
 dist/
 traversal-folder-replace-string.py
