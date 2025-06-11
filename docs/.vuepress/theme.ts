@@ -13,7 +13,7 @@ export default hopeTheme({
 
   logo: "https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/logo.svg",
 
-  repo: "vuepress-theme-hope/vuepress-theme-hope",
+  repo: "https://github.com/Eschngn/vuepress-blog",
 
   docsDir: "docs",
 
