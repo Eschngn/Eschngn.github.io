@@ -1,6 +1,6 @@
 ---
-icon: circle-info
-cover: /assets/images/cover3.jpg
+icon: garden:knowledge-base-26
+date: 2025-06-11
 ---
 
 # 知识库概览页

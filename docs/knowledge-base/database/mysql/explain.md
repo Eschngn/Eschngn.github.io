@@ -5,10 +5,10 @@ category:
   - 数据库
   - Mysql
 tag:
-  - Mysql执行计划
+  - 执行计划
 ---
 
-# Mysql执行计划 1
+# 执行计划
 
 ## 标题 2
 

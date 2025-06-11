@@ -1,13 +1,15 @@
 import { arraySidebar } from "vuepress-theme-hope";
 
 export const knowledgeBase = arraySidebar([
+    "",
     {
         text: "Java",
-        icon: "java",
+        icon: "cib:java",
         collapsible: true, // 可折叠
         children: [
             {
-                text: "Java基础",
+                text: "基础",
+                icon: "hugeicons:abacus",
                 collapsible: true,
                 children: [
                     "java/basis/basis1", // 面向对象
@@ -15,7 +17,8 @@ export const knowledgeBase = arraySidebar([
                 ],
             },
             {
-                text: "Java集合",
+                text: "集合",
+                icon: "lucide:container",
                 collapsible: true,
                 children: [
                     "java/collection/collection1", // List源码分析
@@ -26,17 +29,27 @@ export const knowledgeBase = arraySidebar([
     },
     {
         text: "数据库",
-        icon: "database",
+        icon: "material-symbols:database-outline",
         collapsible: true,
         children: [
             {
                 text: "MySQL",
+                icon: "lineicons:mysql",
                 collapsible: true,
                 children: [
                     "database/mysql/index2",   // 索引解析
                     "database/mysql/explain", // 执行计划详解
                 ],
             },
+            {
+                text: "Redis",
+                icon: "devicon-plain:redis",
+                collapsible: true,
+                children: [
+                    "database/redis/redis1",   // 索引解析
+                    "database/redis/redis2", // 执行计划详解
+                ],
+            }
         ],
     },
 ]);

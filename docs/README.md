@@ -1,12 +1,13 @@
 ---
 home: true
 layout: Blog
-icon: house
+icon: ic:outline-home
 title: 主页
 heroImage: https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/logo.svg
 heroText: Shawn
 heroFullScreen: true
 tagline: Humble And Hungry
+bgImage: https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/bgImage.jpg
 projects:
   - icon: folder-open
     name: 项目名称
