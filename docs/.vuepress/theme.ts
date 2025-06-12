@@ -3,6 +3,7 @@ import { hopeTheme } from "vuepress-theme-hope";
 import navbar from "./navbar.js";
 import sidebar from "./sidebar/index.js";
 
+
 export default hopeTheme({
   hostname: "https://mister-hope.github.io",
 
@@ -180,6 +181,7 @@ export default hopeTheme({
     icon: {
       assets: "iconify"
     },
+    slimsearch:true,
 
     // 如果你需要 PWA。安装 @vuepress/plugin-pwa 并取消下方注释
     // pwa: {
