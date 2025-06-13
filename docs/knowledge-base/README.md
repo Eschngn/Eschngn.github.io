@@ -1,10 +1,12 @@
 ---
 icon: garden:knowledge-base-26
-date: 2025-06-11
+date: 2025-06-13
 ---
 
-# 知识库概览页
+# 知识库
 
-将你的个人介绍和档案放置在此处。
+此处是整个知识库文档的目录
 
-## 二级标题111
+## Java
+
+- [Java基础](java/basis/basis1.md)

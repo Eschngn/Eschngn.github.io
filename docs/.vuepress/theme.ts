@@ -27,7 +27,7 @@ export default hopeTheme({
   sidebar,
 
   // 页脚
-  footer: "默认页脚",
+  footer: '主题使用 <a href="https://theme-hope.vuejs.press/zh/">VuePress Theme Hope</a> " ',
   displayFooter: true,
 
   // 博客相关
