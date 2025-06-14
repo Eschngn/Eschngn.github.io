@@ -1,6 +1,7 @@
 ---
 icon: pen-to-square
 date: 2025-05-22
+sticky: true
 category:
   - Java
 tag:
