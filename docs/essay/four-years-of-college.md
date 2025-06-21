@@ -2,9 +2,9 @@
 icon: pen-to-square
 date: 2025-06-18
 category:
-  - Essay
-tag:
   - 随笔
+tag:
+  - 校园生活
 ---
 
 # 我的大学四年

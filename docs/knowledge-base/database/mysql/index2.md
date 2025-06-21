@@ -3,7 +3,7 @@ icon: pen-to-square
 date: 2025-05-22
 category:
   - 数据库
-  - 索引
+  - MySQL
 tag:
   - 索引
 ---
