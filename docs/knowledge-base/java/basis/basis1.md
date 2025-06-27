@@ -1,6 +1,6 @@
 ---
 icon: pen-to-square
-date: 2025-06-13
+date: 2025-06-27
 star: 10
 sticky: 10
 category:
@@ -263,3 +263,199 @@ System.out.println(b >>> 1);  // 2147483644（补 0，变成大正数 ，0111110
 - 移位不会改变变量本身（除非赋值）
 - 移位操作符实际上支持的类型只有`int`和`long`，编译器在对`short`、`byte`、`char`类型进行移位前，都会将其转换为`int`类型再操作
 
+## continue、break 和 return
+
+在循环结构中，当循环条件不满足或者循环次数达到要求时，循环会正常结束。但是，有时候可能需要在循环的过程中，当发生了某种条件之后 ，提前终止循环，这就需要用到下面几个关键词：
+
+1. `continue`：指跳出当前的这一次循环，继续下一次循环。
+2. `break`：指跳出整个循环体，继续执行循环下面的语句。
+
+`return` 用于跳出所在方法，结束该方法的运行。return 一般有两种用法：
+
+1. `return;`：直接使用 return 结束方法执行，用于没有返回值函数的方法
+2. `return value;`：return 一个特定值，用于有返回值函数的方法
+
+## 变量
+
+成员变量与局部变量的区别：
+
+| 比较项       | 成员变量                                                     | 局部变量                                           |
+| ------------ | ------------------------------------------------------------ | -------------------------------------------------- |
+| **定义位置** | 类中，方法外                                                 | 方法内部、构造器、代码块中                         |
+| **默认值**   | ✅有，数值型为0，引用型为 null                                | ❌没有，必须手动初始化后才能使用                    |
+| **存储位置** | 位于堆内存中，因为成员变量都属于对象的属性，静态成员变量（static修饰）是属于类级别的变量，它在堆内存中只有一个实例，被该类的所有实例共享 | 位于栈内存中，具体在 Java 虚拟机栈中的局部变量表中 |
+| **生存周期** | 随对象创建而创建，随对象回收而消亡                           | 随方法调用创建，方法结束后销毁                     |
+
+![成员变量与局部变量的区别](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/picgo/variable-difference.png)
+
+## 方法
+
+静态方法为什么不能调用非静态成员？
+
+这个需要结合 JVM 的相关知识，主要原因如下：
+
+1. 静态方法是属于类的，在类加载的时候就会分配内存，可以通过类名直接访问。而非静态成员属于实例对象，只有在对象实例化之后才存在，需要通过类的实例对象去访问。
+2. 在类的非静态成员不存在的时候静态方法就已经存在了，此时调用在内存中还不存在的非静态成员，属于非法操作。
+
+静态方法和实例方法有何不同？
+
+**1、调用方式**
+
+在外部调用静态方法时，可以使用 `类名.方法名` 的方式，也可以使用 `对象.方法名` 的方式，而实例方法只有后面这种方式。也就是说，**调用静态方法可以无需创建对象** 。
+
+不过，需要注意的是一般不建议使用 `对象.方法名` 的方式来调用静态方法。这种方式非常容易造成混淆，静态方法不属于类的某个对象而是属于这个类。
+
+因此，一般建议使用 `类名.方法名` 的方式来调用静态方法。
+
+**2、访问类成员是否存在限制**
+
+静态方法在访问本类的成员时，只允许访问静态成员（即静态成员变量和静态方法），不允许访问实例成员（即实例成员变量和实例方法），而实例方法不存在这个限制。
+
+
+
+重载和重写的区别
+
+> 重载就是同样的一个方法能够根据输入数据的不同，做出不同的处理
+>
+> 重写就是当子类继承自父类的相同方法，输入数据一样，但要做出有别于父类的响应时，你就要覆盖父类方法
+
+- 重载发生在同一个类中（或者父类和子类之间），方法名必须相同，参数类型不同、个数不同、顺序不同，方法返回值和访问修饰符可以不同。重载就是同一个类中多个同名方法根据不同的传参来执行不同的逻辑处理
+
+- 重写发生在运行期，是子类对父类的允许访问的方法的实现过程进行重新编写。
+  1. 方法名、参数列表必须相同，子类方法返回值类型应比父类方法返回值类型更小或相等，抛出的异常范围小于等于父类，访问修饰符范围大于等于父类。
+  2. 如果父类方法访问修饰符为 `private/final/static` 则子类就不能重写该方法，但是被 `static` 修饰的方法能够被再次声明。
+  3. 构造方法无法被重写
+
+## 修饰符
+
+（1）public：修饰的类、方法和变量可以被任何其他类访问。
+
+（2）private：不能用于顶级类（即非嵌套类），只能用于内部类；方法和变量只能在定义它的类内部访问。
+
+（3）default：即不加任何访问修饰符，通常称为“默认访问模式“。修饰的类、方法和变量可以被同一包中的其他类访问。
+
+（4）protected：不能用于顶级类（即非嵌套类），只能用于内部类；方法和变量可以被同一包中的其他类访问，也可以被不同包中的子类访问。
+
+（5）static：`static` 修饰符用于表示类级别的成员，而不是实例级别的成员。也就是说，`static` 成员属于类，而不属于类的任何特定实例。
+
+静态变量（类变量）：定义在类中的变量，如果用 `static` 修饰，则该变量是所有对象共享的。
+
+```java
+public class MyClass {
+    public static int staticVar = 0;
+
+    public void incrementStaticVar() {
+        staticVar++;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        MyClass obj1 = new MyClass();
+        MyClass obj2 = new MyClass();
+        
+        obj1.incrementStaticVar();
+        obj2.incrementStaticVar();
+
+        System.out.println(MyClass.staticVar); // 输出：2
+    }
+}
+```
+
+静态方法：静态方法可以直接通过类名调用，不需要创建类的实例。静态方法不能访问实例变量和实例方法，只能访问静态变量和静态方法。
+
+```java
+public class MyClass {
+    public static void staticMethod() {
+        System.out.println("This is a static method.");
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        MyClass.staticMethod(); // 调用静态方法
+    }
+}
+```
+
+静态块：静态块用于初始化静态变量，在类加载时执行。
+
+```java
+public class MyClass {
+    static {
+        System.out.println("Static block executed.");
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        MyClass obj = new MyClass(); // 静态块在类加载时执行
+    }
+}
+```
+
+（6）final：`final` 修饰符用于表示常量、不可继承的类或不可重写的方法。
+
+final变量：使用 `final` 修饰的变量不可改变，必须在声明时或通过构造方法初始化。
+
+```java
+public class MyClass {
+    public final int finalVar = 10;
+
+    public void changeFinalVar() {
+        // finalVar = 20; // 错误：无法改变 final 变量
+    }
+}
+```
+
+final方法：使用 `final` 修饰的方法不能被子类重写。
+
+```java
+public class Parent {
+    public final void finalMethod() {
+        System.out.println("This method cannot be overridden.");
+    }
+}
+
+public class Child extends Parent {
+    // public void finalMethod() { // 错误：无法重写 final 方法
+    // }
+}
+```
+
+final类：使用 `final` 修饰的类不能被继承。
+
+```java
+public final class MyClass {
+    // Class implementation
+}
+
+// public class SubClass extends MyClass { // 错误：无法继承 final 类
+// }
+```
+
+（7）synchronized
+
+`synchronized` 修饰符用于控制线程同步，以确保在同一时间只有一个线程可以访问某个代码块或方法。
+
+（8）abstract
+
+`abstract` 修饰符用于创建抽象类和抽象方法，抽象类不能被实例化，抽象方法没有方法体。
+
+可变长参数
+
+从 Java5 开始，Java 支持定义可变长参数，所谓可变长参数就是允许在调用方法时传入不定长度的参数。就比如下面这个方法就可以接受 0 个或者多个参数。
+
+```java
+public static void method1(String... args) {
+   //......
+}
+```
+
+另外，可变参数只能作为函数的最后一个参数，但其前面可以有也可以没有任何其他参数。
+
+```java
+public static void method2(String arg1, String... args) {
+   //......
+}
+```
