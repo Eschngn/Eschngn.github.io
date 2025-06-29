@@ -1,14 +1,11 @@
 ---
-icon: pen-to-square
-date: 2025-05-22
+title: 索引
 category:
   - 数据库
   - MySQL
 tag:
   - 索引
 ---
-
-# 索引 
 
 ## 标题 2
 

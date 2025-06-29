@@ -1,14 +1,11 @@
 ---
-icon: pen-to-square
-date: 2025-05-22
+title: 数据类型
 category:
   - 数据库
   - Redis
 tag:
   - 数据类型
 ---
-
-# 数据类型
 
 ## 标题 2
 

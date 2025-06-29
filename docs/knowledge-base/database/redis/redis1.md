@@ -1,6 +1,5 @@
 ---
-icon: pen-to-square
-date: 2025-05-22
+title: 数据结构
 category:
   - 数据库
   - Redis
@@ -8,7 +7,6 @@ tag:
   - 数据结构
 ---
 
-# 数据结构 
 
 ## 标题 2
 

@@ -30,6 +30,7 @@ export default hopeTheme({
   footer: '主题使用 <a href="https://theme-hope.vuejs.press/zh/">VuePress Theme Hope</a> " ',
   displayFooter: true,
 
+  pageInfo: ["Author", "Category", "Tag", "Original", "Word", "ReadingTime"],
   // 博客相关
   blog: {
     description: "一个软件开发者",

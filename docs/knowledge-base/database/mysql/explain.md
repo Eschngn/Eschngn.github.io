@@ -1,14 +1,11 @@
 ---
-icon: pen-to-square
-date: 2025-05-22
+title: 执行计划
 category:
   - 数据库
   - MySQL
 tag:
   - 执行计划
 ---
-
-# 执行计划
 
 ## 标题 2
 

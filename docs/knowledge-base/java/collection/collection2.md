@@ -1,13 +1,10 @@
 ---
-icon: pen-to-square
-date: 2025-05-22
+title: Java 集合2
 category:
   - Java
 tag:
   - Java集合
 ---
-
-# Java集合 2
 
 ## 标题 2
 

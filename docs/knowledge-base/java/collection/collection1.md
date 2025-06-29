@@ -1,6 +1,4 @@
 ---
-icon: pen-to-square
-date: 2025-05-22
 category:
   - Java
 tag:
