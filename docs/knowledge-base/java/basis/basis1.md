@@ -1,6 +1,6 @@
 ---
 icon: pen-to-square
-date: 2025-06-27
+date: 2025-06-29
 star: 10
 sticky: 10
 category:
@@ -8,7 +8,7 @@ category:
 tag:
   - Java基础
 ---
-# Java 基础
+# 基础知识1
 
 ## 数据类型
 
