@@ -48,6 +48,8 @@ OOP 的三大特征
   3. 多态不能调用“只在子类存在但在父类不存在”的方法；
   4. 如果子类重写了父类的方法，真正执行的是子类重写的方法，如果子类没有重写父类的方法，执行的是父类的方法。
 
+## 接口与抽象类
+
 ### 抽象类
 
 抽象类（`abstract class`） 是一种不能被实例化的类，用来被子类继承并扩展，其主要作用是为一组子类提供共同的属性、行为或接口定义。子类继承抽象类时，子类必须实现父类中定义的抽象方法。
@@ -132,4 +134,273 @@ public interface BasketballPlayer {
 5. 从 **Java 9** 开始，接口中允许定义 `private` 方法来封装一些重复的逻辑，供默认方法和静态方法调用，提高代码的可读性和可维护性。
 
 6. 接口不可以被实例化，也就是说接口不能有静态代码块和构造方法。
+
+### 两者的区别
+
+1. 语法层面：
+
+   - 继承和实现：一个类只能继承一个类（包括抽象类），因为 Java 不支持多继承。但一个类可以实现多个接口，一个接口也可以继承多个其他接口。
+   - 成员变量：接口中的成员变量只能是 `public static final` 类型的，不能被修改且必须有初始值。抽象类的成员变量可以有任何修饰符（`private`, `protected`, `public`），可以在子类中被重新定义或赋值。
+   - 方法：Java 8 之前，接口中的方法默认是 `public abstract` ，也就是只能有方法声明。自 Java 8 起，可以在接口中定义 `default`（默认） 方法和 `static` （静态）方法。 自 Java 9 起，接口可以包含 `private` 方法。抽象类可以包含抽象方法和非抽象方法。抽象方法没有方法体，必须在子类中实现。非抽象方法有具体实现，可以直接在抽象类中使用或在子类中重写。
+
+2. 设计层面：
+
+   - 接口的核心设计理念是**契约**或者**能力**，它定义了一组对象可以拥有的公共行为的规范（`What`），而不关心这些行为是如何实现的。接口的关注点是行为的抽象，它描述了一个类能做什么，通常用于标识一种  `has-a` 的关系。
+
+   - 抽象类的核心设计理念是**模版**或者**骨架**，它提供了一个部分实现的基类（可能包含具体方法和抽象方法），旨在被子类继承和扩展（`How + What`）。抽象类通常用于标识一种 `is-a` 的关系，即子类是抽象类的一种特殊类型。它不仅定义了 “我能做什么”，还可能提供了 “我如何做一部分”。
+
+   - 举个栗子🌰：
+
+     比如一个物流派送系统中，多种类型的运输工具，比如：卡车、货轮、飞机、无人机等等。
+
+     我们可以用接口定义 “能力” —— 比如 “可以飞”（`Flyable`）、“可以装货”（`Loadable`），我们不用关心对象是飞机还是鸟还是无人机，只要能飞，就实现 `Flyable`；只要能装货，就实现 `Loadable`。
+
+     ```java
+     public interface Flyable {
+         void fly();
+     }
+     
+     public interface Loadable {
+         void loadCargo(double weight);
+     }
+     ```
+
+     我们可以用抽象类定义 “模版” —— 比如 “运输工具”（`TransportVehicle`），这个抽象类描述的是 “所有运输工具的通用部分”，比如都有一个司机、都需要执行送货操作，属于 “是一种运输工具”的类型关系，是一个继承体系。
+
+     ```java
+     public abstract class TransportVehicle {
+         protected String id;
+         protected String driver;
+     
+         public void assignDriver(String driverName) {
+             this.driver = driverName;
+         }
+     
+         public abstract void deliver(String destination);
+     }
+     ```
+
+     🚛卡车 Truck：
+
+     ```java
+     public class Truck extends TransportVehicle implements Loadable {
+         @Override
+         public void deliver(String destination) {
+             System.out.println("Truck delivering to " + destination);
+         }
+     
+         @Override
+         public void loadCargo(double weight) {
+             System.out.println("Truck loaded with " + weight + "kg");
+         }
+     }
+     ```
+
+     🚁无人机：
+
+     ```java
+     public class Drone extends TransportVehicle implements Flyable, Loadable {
+         @Override
+         public void deliver(String destination) {
+             System.out.println("Drone flying to " + destination);
+         }
+     
+         @Override
+         public void fly() {
+             System.out.println("Drone taking off...");
+         }
+     
+         @Override
+         public void loadCargo(double weight) {
+             System.out.println("Drone loaded with " + weight + "kg");
+         }
+     }
+     ```
+## 深拷贝和浅拷贝
+
+### 浅拷贝
+
+浅拷贝会在堆上创建一个新的对象（区别于引用拷贝：两个不同的引用指向同一个对象），这个新对象里的基本数据类型成员是原对象值的副本，而引用类型成员（比如对象、数组）仅仅是复制了引用地址，这意味着原对象和新对象会共享这些引用类型成员指向的内存空间（指向同一个堆内容中的引用类型成员）。
+
+```java
+class Subject {
+    String name;
+
+    public Subject(String name) {
+        this.name = name;
+    }
+}
+
+class Student implements Cloneable {
+    String studentName; // 基本数据类型或不可变对象
+    Subject subject;    // 引用类型成员
+
+    public Student(String studentName, String subjectName) {
+        this.studentName = studentName;
+        this.subject = new Subject(subjectName);
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone(); // 执行浅拷贝
+    }
+
+    public void display() {
+        System.out.println("学生姓名: " + studentName + ", 科目: " + subject.name);
+        System.out.println("Subject 对象内存地址: " + subject.hashCode());
+    }
+}
+
+public class ShallowCopyDemo {
+    public static void main(String[] args) {
+        try {
+            Student originalStudent = new Student("张三", "数学");
+            System.out.println("原始学生信息:");
+            originalStudent.display();
+
+            Student clonedStudent = (Student) originalStudent.clone(); // 浅拷贝
+            System.out.println("\n拷贝学生信息 (浅拷贝后):");
+            clonedStudent.display();
+
+            // 修改拷贝对象的引用类型成员
+            clonedStudent.studentName = "李四"; // 基本类型修改，互不影响
+            clonedStudent.subject.name = "物理"; // 引用类型修改，会影响原对象
+
+            System.out.println("\n修改拷贝对象后:");
+            System.out.println("原始学生信息:");
+            originalStudent.display(); // 注意：原对象的科目也变成了“物理”
+            System.out.println("拷贝学生信息:");
+            clonedStudent.display();
+
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+运行结果：
+
+```tex
+原始学生信息:
+学生姓名: 张三, 科目: 数学
+Subject 对象内存地址: 356573597
+
+拷贝学生信息 (浅拷贝后):
+学生姓名: 张三, 科目: 数学
+Subject 对象内存地址: 356573597
+
+修改拷贝对象后:
+原始学生信息:
+学生姓名: 张三, 科目: 物理   <-- 原对象的科目也变成了“物理”
+Subject 对象内存地址: 356573597
+拷贝学生信息:
+学生姓名: 李四, 科目: 物理
+Subject 对象内存地址: 356573597
+```
+可以看到，`originalStudent` 和 `clonedStudent` 的 `subject` 成员指向了同一个 `Subject` 对象，所以修改其中一个会导致另一个也受影响；而 `studentName` 成员则相互独立，互不影响。
+
+### 深拷贝
+
+深拷贝不仅会复制对象本身，还会递归地复制其内部所有引用的对象。这意味着原对象和新对象在内存中是完全独立的，没有任何共享的引用。
+
+常见的深拷贝的实现方式：
+
+1. 递归实现 `clone()`： 在 `clone()` 方法中，除了调用 `super.clone()` 进行浅拷贝外，还要手动对其所有引用类型成员调用它们的 `clone()` 方法，确保它们也被完全复制。这种方式要求所有涉及到拷贝的类都实现 `Cloneable` 接口。
+
+2. 序列化和反序列化： 将对象先序列化成字节流，再从字节流反序列化回来。这种方式会创建全新的对象图，是实现深拷贝的一种简单有效的方法，但需要类实现 `Serializable` 接口，并且会有一定的性能开销。
+
+3. 构造器或工厂方法： 手动编写代码，在构造新对象时，创建所有引用类型成员的新实例并拷贝数据。
+
+```java
+class SubjectDeep implements Cloneable {
+    String name;
+
+    public SubjectDeep(String name) {
+        this.name = name;
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone(); // SubjectDeep 自身也需要浅拷贝
+    }
+}
+
+class StudentDeep implements Cloneable {
+    String studentName;
+    SubjectDeep subject; // 引用类型成员
+
+    public StudentDeep(String studentName, String subjectName) {
+        this.studentName = studentName;
+        this.subject = new SubjectDeep(subjectName);
+    }
+
+    // 深拷贝实现
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        StudentDeep clonedStudent = (StudentDeep) super.clone(); // 首先进行浅拷贝
+
+        // 关键步骤：手动对引用类型成员进行深拷贝
+        clonedStudent.subject = (SubjectDeep) subject.clone();
+        return clonedStudent;
+    }
+
+    public void display() {
+        System.out.println("学生姓名: " + studentName + ", 科目: " + subject.name);
+        System.out.println("SubjectDeep 对象内存地址: " + subject.hashCode());
+    }
+}
+
+public class DeepCopyDemo {
+    public static void main(String[] args) {
+        try {
+            StudentDeep originalStudent = new StudentDeep("张三", "数学");
+            System.out.println("原始学生信息:");
+            originalStudent.display();
+
+            StudentDeep clonedStudent = (StudentDeep) originalStudent.clone(); // 深拷贝
+            System.out.println("\n拷贝学生信息 (深拷贝后):");
+            clonedStudent.display();
+
+            // 修改拷贝对象的引用类型成员
+            clonedStudent.studentName = "李四";
+            clonedStudent.subject.name = "物理";
+
+            System.out.println("\n修改拷贝对象后:");
+            System.out.println("原始学生信息:");
+            originalStudent.display(); // 注意：原对象的科目**没有**被修改
+            System.out.println("拷贝学生信息:");
+            clonedStudent.display();
+
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+运行结果：
+
+```tex
+原始学生信息:
+学生姓名: 张三, 科目: 数学
+SubjectDeep 对象内存地址: 356573597
+
+拷贝学生信息 (深拷贝后):
+学生姓名: 张三, 科目: 数学
+SubjectDeep 对象内存地址: 1735600054   <-- 地址不同了
+
+修改拷贝对象后:
+原始学生信息:
+学生姓名: 张三, 科目: 数学   <-- 原始对象未被修改
+SubjectDeep 对象内存地址: 356573597
+拷贝学生信息:
+学生姓名: 李四, 科目: 物理
+SubjectDeep 对象内存地址: 1735600054
+```
+
+现在，修改 `clonedStudent` 的 `subject` 不会影响 `originalStudent` 的 `subject`，因为 `clonedStudent.subject` 是一个全新的 `SubjectDeep` 对象，在内存中与原对象是完全独立的。
+
+### 对比
+
 
