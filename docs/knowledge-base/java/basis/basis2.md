@@ -220,7 +220,7 @@ public interface BasketballPlayer {
 
 ### 浅拷贝
 
-浅拷贝会在堆上创建一个新的对象（区别于引用拷贝：两个不同的引用指向同一个对象），这个新对象里的基本数据类型成员是原对象值的副本，而引用类型成员（比如对象、数组）仅仅是复制了引用地址，这意味着原对象和新对象会共享这些引用类型成员指向的内存空间（指向同一个堆内容中的引用类型成员）。
+浅拷贝会在堆上创建一个新的对象（区别于引用拷贝：两个不同的引用指向同一个对象），这个新对象里的基本数据类型和对应的包装数据类型以及不可变对象 `String` 成员是原对象值的副本，而引用类型成员（比如对象、数组）仅仅是复制了引用地址，这意味着原对象和新对象会共享这些引用类型成员指向的内存空间（指向同一个堆内容中的引用类型成员）。
 
 ```java
 class Subject {
@@ -232,12 +232,16 @@ class Subject {
 }
 
 class Student implements Cloneable {
-    String studentName; // 基本数据类型或不可变对象
+    String studentName; // 不可变对象
     Subject subject;    // 引用类型成员
+    int age;            // 基本数据类型
+    Integer height;     // 包装数据类型
 
-    public Student(String studentName, String subjectName) {
+    public Student(String studentName, String subjectName, int age, Integer height) {
         this.studentName = studentName;
         this.subject = new Subject(subjectName);
+        this.age = age;
+        this.height = height;
     }
 
     @Override
@@ -246,7 +250,7 @@ class Student implements Cloneable {
     }
 
     public void display() {
-        System.out.println("学生姓名: " + studentName + ", 科目: " + subject.name);
+        System.out.println("学生姓名: " + studentName + ", 科目: " + subject.name + ", 年龄: " + age + ", 身高: " + height);
         System.out.println("Subject 对象内存地址: " + subject.hashCode());
     }
 }
@@ -254,7 +258,7 @@ class Student implements Cloneable {
 public class ShallowCopyDemo {
     public static void main(String[] args) {
         try {
-            Student originalStudent = new Student("张三", "数学");
+            Student originalStudent = new Student("张三", "数学", 18, 175);
             System.out.println("原始学生信息:");
             originalStudent.display();
 
@@ -263,8 +267,10 @@ public class ShallowCopyDemo {
             clonedStudent.display();
 
             // 修改拷贝对象的引用类型成员
-            clonedStudent.studentName = "李四"; // 基本类型修改，互不影响
+            clonedStudent.studentName = "李四";  // 不可变类型修改，互不影响
             clonedStudent.subject.name = "物理"; // 引用类型修改，会影响原对象
+            clonedStudent.age = 21;             // 基本类型修改，互不影响
+            clonedStudent.height = 180;         // 包装类型修改，互不影响
 
             System.out.println("\n修改拷贝对象后:");
             System.out.println("原始学生信息:");
@@ -283,22 +289,22 @@ public class ShallowCopyDemo {
 
 ```tex
 原始学生信息:
-学生姓名: 张三, 科目: 数学
+学生姓名: 张三, 科目: 数学, 年龄: 18, 身高: 175
 Subject 对象内存地址: 356573597
 
 拷贝学生信息 (浅拷贝后):
-学生姓名: 张三, 科目: 数学
+学生姓名: 张三, 科目: 数学, 年龄: 18, 身高: 175
 Subject 对象内存地址: 356573597
 
 修改拷贝对象后:
 原始学生信息:
-学生姓名: 张三, 科目: 物理   <-- 原对象的科目也变成了“物理”
+学生姓名: 张三, 科目: 物理, 年龄: 18, 身高: 175   <-- 原对象的科目也变成了“物理”
 Subject 对象内存地址: 356573597
 拷贝学生信息:
-学生姓名: 李四, 科目: 物理
+学生姓名: 李四, 科目: 物理, 年龄: 21, 身高: 180
 Subject 对象内存地址: 356573597
 ```
-可以看到，`originalStudent` 和 `clonedStudent` 的 `subject` 成员指向了同一个 `Subject` 对象，所以修改其中一个会导致另一个也受影响；而 `studentName` 成员则相互独立，互不影响。
+可以看到，`originalStudent` 和 `clonedStudent` 的 `subject` 成员指向了同一个 `Subject` 对象，所以修改其中一个会导致另一个也受影响；而 `studentName`、`age` 和 `height` 则相互独立，互不影响。
 
 ### 深拷贝
 
@@ -311,6 +317,8 @@ Subject 对象内存地址: 356573597
 2. 序列化和反序列化： 将对象先序列化成字节流，再从字节流反序列化回来。这种方式会创建全新的对象图，是实现深拷贝的一种简单有效的方法，但需要类实现 `Serializable` 接口，并且会有一定的性能开销。
 
 3. 构造器或工厂方法： 手动编写代码，在构造新对象时，创建所有引用类型成员的新实例并拷贝数据。
+
+下面是使用递归的方式实现的深拷贝：
 
 ```java
 class SubjectDeep implements Cloneable {
@@ -329,10 +337,14 @@ class SubjectDeep implements Cloneable {
 class StudentDeep implements Cloneable {
     String studentName;
     SubjectDeep subject; // 引用类型成员
+    int age;
+    Integer height;
 
-    public StudentDeep(String studentName, String subjectName) {
+    public StudentDeep(String studentName, String subjectName, int age, Integer height) {
         this.studentName = studentName;
         this.subject = new SubjectDeep(subjectName);
+        this.age = age;
+        this.height = height;
     }
 
     // 深拷贝实现
@@ -346,7 +358,7 @@ class StudentDeep implements Cloneable {
     }
 
     public void display() {
-        System.out.println("学生姓名: " + studentName + ", 科目: " + subject.name);
+        System.out.println("学生姓名: " + studentName + ", 科目: " + subject.name + ", 年龄: " + age + ", 身高: " + height);
         System.out.println("SubjectDeep 对象内存地址: " + subject.hashCode());
     }
 }
@@ -354,7 +366,7 @@ class StudentDeep implements Cloneable {
 public class DeepCopyDemo {
     public static void main(String[] args) {
         try {
-            StudentDeep originalStudent = new StudentDeep("张三", "数学");
+            StudentDeep originalStudent = new StudentDeep("张三", "数学", 18, 175);
             System.out.println("原始学生信息:");
             originalStudent.display();
 
@@ -365,6 +377,8 @@ public class DeepCopyDemo {
             // 修改拷贝对象的引用类型成员
             clonedStudent.studentName = "李四";
             clonedStudent.subject.name = "物理";
+            clonedStudent.age = 21;
+            clonedStudent.height = 180;
 
             System.out.println("\n修改拷贝对象后:");
             System.out.println("原始学生信息:");
@@ -383,24 +397,24 @@ public class DeepCopyDemo {
 
 ```tex
 原始学生信息:
-学生姓名: 张三, 科目: 数学
+学生姓名: 张三, 科目: 数学, 年龄: 18, 身高: 175
 SubjectDeep 对象内存地址: 356573597
 
 拷贝学生信息 (深拷贝后):
-学生姓名: 张三, 科目: 数学
+学生姓名: 张三, 科目: 数学, 年龄: 18, 身高: 175
 SubjectDeep 对象内存地址: 1735600054   <-- 地址不同了
 
 修改拷贝对象后:
 原始学生信息:
-学生姓名: 张三, 科目: 数学   <-- 原始对象未被修改
+学生姓名: 张三, 科目: 数学, 年龄: 18, 身高: 175   <-- 原始对象的科目未被修改
 SubjectDeep 对象内存地址: 356573597
 拷贝学生信息:
-学生姓名: 李四, 科目: 物理
+学生姓名: 李四, 科目: 物理, 年龄: 21, 身高: 180
 SubjectDeep 对象内存地址: 1735600054
 ```
 
 现在，修改 `clonedStudent` 的 `subject` 不会影响 `originalStudent` 的 `subject`，因为 `clonedStudent.subject` 是一个全新的 `SubjectDeep` 对象，在内存中与原对象是完全独立的。
 
-### 对比
+### 两者对比
 
 
