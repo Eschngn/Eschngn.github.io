@@ -324,136 +324,154 @@ System.out.println(b >>> 1);  // 2147483644（补 0，变成大正数 ，0111110
   2. 如果父类方法访问修饰符为 `private/final/static` 则子类就不能重写该方法，但是被 `static` 修饰的方法能够被再次声明。
   3. 构造方法无法被重写
 
-## 修饰符
+## `==` 和 `equals`
 
-（1）public：修饰的类、方法和变量可以被任何其他类访问。
+### `==` 运算符
 
-（2）private：不能用于顶级类（即非嵌套类），只能用于内部类；方法和变量只能在定义它的类内部访问。
+`==` 运算符是一个关系运算符，对于基本类型和引用类型的作用效果是不同的
 
-（3）default：即不加任何访问修饰符，通常称为“默认访问模式“。修饰的类、方法和变量可以被同一包中的其他类访问。
+- 对于基本数据类型来说，`==` 比较的是值。
 
-（4）protected：不能用于顶级类（即非嵌套类），只能用于内部类；方法和变量可以被同一包中的其他类访问，也可以被不同包中的子类访问。
+  ```java
+  int a = 10;
+  int b = 10;
+  int c = 20;
+  
+  System.out.println(a == b); // true (值相等)
+  System.out.println(a == c); // false (值不相等)
+  ```
 
-（5）static：`static` 修饰符用于表示类级别的成员，而不是实例级别的成员。也就是说，`static` 成员属于类，而不属于类的任何特定实例。
+- 对于引用数据类型来说，`==` 比较的是对象的内存地址。
 
-静态变量（类变量）：定义在类中的变量，如果用 `static` 修饰，则该变量是所有对象共享的。
+  ```java
+  String s1 = new String("Hello");
+  String s2 = new String("Hello"); // s1 和 s2 是两个不同的String对象
+  String s3 = s1;                 // s3 和 s1 指向同一个String对象
+  
+  System.out.println(s1 == s2); // false (s1 和 s2 指向不同的内存地址)
+  System.out.println(s1 == s3); // true (s1 和 s3 指向同一个内存地址)
+  
+  // 对于包装类型，== 的行为还会受到缓存机制的影响
+  Integer i1 = 100; // 自动装箱，100在Integer的缓存范围内
+  Integer i2 = 100; // 自动装箱，100在Integer的缓存范围内
+  Integer i3 = 200; // 自动装箱，200超出Integer的缓存范围
+  Integer i4 = 200; // 自动装箱，200超出Integer的缓存范围
+  
+  System.out.println(i1 == i2); // true (因为100在缓存范围内，通常会指向同一个对象)
+  System.out.println(i3 == i4); // false (因为200超出缓存范围，会创建两个新对象)
+  
+  // 注意：Float 和 Double 没有缓存机制，即使值相同，== 也会是 false。
+  Float f1 = 1.0f;
+  Float f2 = 1.0f;
+  System.out.println(f1 == f2); // false
+  ```
 
-```java
-public class MyClass {
-    public static int staticVar = 0;
+> 因为 Java 只有值传递，所以，对于 `==` 来说，不管是比较基本数据类型，还是引用数据类型的变量，其本质比较的都是值，只是引用类型变量存的值是对象的地址。
 
-    public void incrementStaticVar() {
-        staticVar++;
+### `equals()` 方法
+
+`equals()` 方法是 `java.lang.Object` 类中的一个方法，它被设计用来比较两个对象的**内容**是否相等。
+
+1. `Object` 类中 `equals()` 的默认实现：在 `Object` 类中，`equals()` 方法的默认实现与 `==` 运算符的行为**完全相同**，即它也比较的是对象的**引用地址**。
+
+   `Object` 类中 `equals()` 方法：
+   
+    ```java
+   public boolean equals(Object obj) {
+        return (this == obj);
     }
-}
+   ```
 
-public class Main {
-    public static void main(String[] args) {
-        MyClass obj1 = new MyClass();
-        MyClass obj2 = new MyClass();
-        
-        obj1.incrementStaticVar();
-        obj2.incrementStaticVar();
+   ```java
+   Object o1 = new Object();
+   Object o2 = new Object();
+   System.out.println(o1.equals(o2)); // false (默认行为是比较地址)
+   ```
 
-        System.out.println(MyClass.staticVar); // 输出：2
-    }
-}
-```
+2. 被重写 (Override) 的 `equals()` 方法：许多 Java 核心库中的类（例如 `String`、`Integer`、`ArrayList` 等）都**重写了 `equals()` 方法**，以提供基于**内容**的比较逻辑。
 
-静态方法：静态方法可以直接通过类名调用，不需要创建类的实例。静态方法不能访问实例变量和实例方法，只能访问静态变量和静态方法。
+   - `String` 类的 `equals()`：比较字符串的**字符序列**是否相同。
 
-```java
-public class MyClass {
-    public static void staticMethod() {
-        System.out.println("This is a static method.");
-    }
-}
+     ```java
+     String s1 = new String("Hello");
+     String s2 = new String("Hello");
+     String s3 = "World";
+     
+     System.out.println(s1.equals(s2)); // true (内容相等)
+     System.out.println(s1.equals(s3)); // false
+     ```
 
-public class Main {
-    public static void main(String[] args) {
-        MyClass.staticMethod(); // 调用静态方法
-    }
-}
-```
+   - `Integer` 类的 `equals()`：比较包装的整数**值**是否相同。
 
-静态块：静态块用于初始化静态变量，在类加载时执行。
+     ```java
+     Integer i1 = new Integer(100); // 尽管现在不推荐直接使用new Integer()
+     Integer i2 = new Integer(100);
+     Integer i3 = 200;
+     Integer i4 = 200;
+     
+     System.out.println(i1.equals(i2)); // true (值相等)
+     System.out.println(i3.equals(i4)); // true (值相等)
+     ```
 
-```java
-public class MyClass {
-    static {
-        System.out.println("Static block executed.");
-    }
-}
+   - 自定义类重写 `equals()`：如果是自己定义的类需要进行基于内容的比较，那么**必须**重写 `equals()` 方法（通常也需要同时重写 `hashCode()` 方法，以满足 `equals` 和 `hashCode` 的通用约定）。
 
-public class Main {
-    public static void main(String[] args) {
-        MyClass obj = new MyClass(); // 静态块在类加载时执行
-    }
-}
-```
+     ```java
+     class MyPoint {
+         int x;
+         int y;
+     
+         public MyPoint(int x, int y) {
+             this.x = x;
+             this.y = y;
+         }
+     
+         @Override
+         public boolean equals(Object obj) {
+             // 1. 检查是否为同一个对象
+             if (this == obj) return true;
+             // 2. 检查传入对象是否为空或类型不匹配
+             if (obj == null || getClass() != obj.getClass()) return false;
+             // 3. 类型转换
+             MyPoint other = (MyPoint) obj;
+             // 4. 比较关键字段的内容
+             return x == other.x && y == other.y;
+         }
+     
+         // 同时重写 hashCode()
+         @Override
+         public int hashCode() {
+             return Objects.hash(x, y);
+         }
+     }
+     
+     MyPoint p1 = new MyPoint(1, 2);
+     MyPoint p2 = new MyPoint(1, 2);
+     MyPoint p3 = new MyPoint(3, 4);
+     
+     System.out.println(p1 == p2);       // false (不同对象)
+     System.out.println(p1.equals(p2));  // true (内容相等，因为我们重写了equals)
+     System.out.println(p1.equals(p3));  // false
+     ```
 
-（6）final：`final` 修饰符用于表示常量、不可继承的类或不可重写的方法。
+## `hashCode()` 方法
 
-final变量：使用 `final` 修饰的变量不可改变，必须在声明时或通过构造方法初始化。
+`hashCode()` 方法是 `java.lang.Object` 类中的一个方法，它返回该对象的哈希码（hash code）值。哈希码是一个整数，它在散列数据结构（如 `HashMap`、`HashSet`、`HashTable`）中起着提高查找对象效率的作用。
 
-```java
-public class MyClass {
-    public final int finalVar = 10;
+> 以 `HashSet` 为例，当我们把对象存入 `HashSet` 时，会先计算出对象的 `hashCode` 来得到对象在底层数组中存储的 “桶” 的位置，同时也会与其他已经加入的对象的 `hashCode` 值作比较，如果没有相符的 `hashCode`，`HashSet` 会假设对象没有重复出现。但是如果发现有相同 `hashCode` 值的对象，这时会调用 `equals()` 方法来检查 `hashCode` 相等的对象是否真的相同。如果两者相同，`HashSet` 就不会让其加入操作成功。如果不同的话，就会重新散列到其他位置。这样我们就大大减少了 `equals` 的次数，相应就大大提高了执行速度。
 
-    public void changeFinalVar() {
-        // finalVar = 20; // 错误：无法改变 final 变量
-    }
-}
-```
+以上也便是 JDK 同时提供 `hashCode()` 和 `equals()` 方法的原因。
 
-final方法：使用 `final` 修饰的方法不能被子类重写。
+在 `Object` 类中，`hashCode()` 的默认实现通常会将对象的**内存地址**转换为一个整数。这意味着，即使两个不同的对象内容完全相同，它们的哈希码也可能是不同的（因为它们在内存中的地址不同）。
 
-```java
-public class Parent {
-    public final void finalMethod() {
-        System.out.println("This method cannot be overridden.");
-    }
-}
+因此，Java 规范对这两个方法定义了非常重要的**约定（Contract）**：
 
-public class Child extends Parent {
-    // public void finalMethod() { // 错误：无法重写 final 方法
-    // }
-}
-```
+1. **如果两个对象根据 `equals(Object obj)` 方法是相等的，那么调用这两个对象中任意一个的 `hashCode()` 方法都必须产生相同的整数结果。**
+   - **理解：** 如果我们认为两个对象是“一样”的（通过 `equals` 比较），那么它们的哈希码就**必须一样**。否则，我们将无法在哈希表中正确地查找这些对象。
+   例如，如果我们把一个 `MyObject A` 存入 `HashSet`，然后用一个与 `A` `equals` 的 `MyObject B` 去查找 ，如果 `A` 和 `B` 的 `hashCode` 不同，`HashSet` 定位到不同的存储桶中，导致找不到 `A`。
+   删除对象也是同理，我们可能无法通过一个逻辑上相等的对象来删除另一个对象，因为 `HashSet` 会基于 `hashCode()` 查找错误的存储桶。
+2. **如果两个对象根据 `equals(Object obj)` 方法是不相等的，那么调用这两个对象中任意一个的 `hashCode()` 方法不要求产生不同的整数结果。**
+   - **理解：** 两个不相等的对象可以有相同的哈希码。这种情况被称为**哈希冲突（hash collision）**。哈希冲突是允许的，但冲突越少越好，因为它会降低哈希表的性能（需要进一步比较 `equals`）。
+3. **在应用程序执行期间，只要一个对象的 `equals()` 比较中所用的信息没有被修改，那么对该对象多次调用 `hashCode()` 方法都必须始终返回相同的整数结果。**
+   - **理解：** 哈希码必须是**稳定的**。如果一个对象的哈希码在使用过程中会发生变化，那么当它被放入哈希表后，你可能就无法再找到它了。
 
-final类：使用 `final` 修饰的类不能被继承。
-
-```java
-public final class MyClass {
-    // Class implementation
-}
-
-// public class SubClass extends MyClass { // 错误：无法继承 final 类
-// }
-```
-
-（7）synchronized
-
-`synchronized` 修饰符用于控制线程同步，以确保在同一时间只有一个线程可以访问某个代码块或方法。
-
-（8）abstract
-
-`abstract` 修饰符用于创建抽象类和抽象方法，抽象类不能被实例化，抽象方法没有方法体。
-
-可变长参数
-
-从 Java5 开始，Java 支持定义可变长参数，所谓可变长参数就是允许在调用方法时传入不定长度的参数。就比如下面这个方法就可以接受 0 个或者多个参数。
-
-```java
-public static void method1(String... args) {
-   //......
-}
-```
-
-另外，可变参数只能作为函数的最后一个参数，但其前面可以有也可以没有任何其他参数。
-
-```java
-public static void method2(String arg1, String... args) {
-   //......
-}
-```
+所以，我们在重写 `equals()` 方法的同时，也要重写 `hashCode()` 方法，以满足 `equals` 和 `hashCode` 的通用约定。
