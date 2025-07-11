@@ -12,8 +12,9 @@ export const knowledgeBase = arraySidebar([
                 icon: "hugeicons:abacus",
                 collapsible: true,
                 children: [
-                    "java/basis/basis1", // 面向对象
-                    "java/basis/basis2", // 关键字整理
+                    "java/basis/basis1", 
+                    "java/basis/basis2", 
+                    "java/basis/modifier",
                 ],
             },
             {
