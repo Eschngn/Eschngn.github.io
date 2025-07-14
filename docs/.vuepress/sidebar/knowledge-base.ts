@@ -15,6 +15,7 @@ export const knowledgeBase = arraySidebar([
                     "java/basis/basis1", 
                     "java/basis/basis2", 
                     "java/basis/modifier",
+                    "java/basis/string"
                 ],
             },
             {
