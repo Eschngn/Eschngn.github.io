@@ -151,9 +151,9 @@ public interface BasketballPlayer {
 
    - 举个栗子🌰：
 
-     比如一个物流派送系统中，多种类型的运输工具，比如：卡车、货轮、飞机、无人机等等。
+     比如一个物流派送系统中，有多种类型的运输工具，比如：卡车、货轮、飞机、无人机等等。
 
-     我们可以用接口定义 “能力” —— 比如 “可以飞”（`Flyable`）、“可以装货”（`Loadable`），我们不用关心对象是飞机还是鸟还是无人机，只要能飞，就实现 `Flyable`；只要能装货，就实现 `Loadable`。
+     我们可以用接口定义 “能力” —— 比如 “可以飞”（`Flyable`）、“可以装货”（`Loadable`），我们不用关心对象是飞机还是无人机，只要能飞，就实现 `Flyable`；只要能装货，就实现 `Loadable`。
 
      ```java
      public interface Flyable {
@@ -165,7 +165,7 @@ public interface BasketballPlayer {
      }
      ```
 
-     我们可以用抽象类定义 “模版” —— 比如 “运输工具”（`TransportVehicle`），这个抽象类描述的是 “所有运输工具的通用部分”，比如都有一个司机、都需要执行送货操作，属于 “是一种运输工具”的类型关系，是一个继承体系。
+     我们可以用抽象类定义 “模版” —— 比如 “运输工具”（`TransportVehicle`），这个抽象类描述的是 “所有运输工具的通用部分”，比如都有一个司机、都需要执行送货操作，属于 “是一种运输工具” 的类型关系，是一个继承体系。
 
      ```java
      public abstract class TransportVehicle {
