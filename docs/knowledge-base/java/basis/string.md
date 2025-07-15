@@ -119,7 +119,7 @@ System.out.println(str3 == str5); // false (一个在堆，一个在常量池)
 System.out.println(str3.equals(str5)); // true (内容相同)
 ```
 
-![字符串常量池](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/picgo/image-20250714145112006.png)
+![字符串常量池](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/picgo/%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%B8%B8%E9%87%8F%E6%B1%A0.png)
 
 **字符串常量池**是 `JVM` 为了提升性能和减少内存消耗针对字符串（`String` 类）专门开辟的一块区域，主要目的是为了避免字符串的重复创建。
 
@@ -174,7 +174,7 @@ System.out.println(s3 == s1); // false (s1 依然是堆中的那个对象)
 
 对于编译期可以确定值的字符串，也就是常量字符串 ，JVM 会将其存入字符串常量池。并且，字符串常量拼接得到的字符串常量在编译阶段就已经被存放字符串常量池
 
-在编译过程中，Javac 编译器（下文中统称为编译器）会进行一个叫做**常量折叠(Constant Folding)**的代码优化。《深入理解 Java 虚拟机》中是也有介绍到：
+在编译过程中，Javac 编译器会进行一个叫做常量折叠(Constant Folding)的代码优化。《深入理解 Java 虚拟机》中有介绍到：
 
 ![常量折叠](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/picgo/image-20241014130535051.png)
 
@@ -182,7 +182,7 @@ System.out.println(s3 == s1); // false (s1 依然是堆中的那个对象)
 
 并不是所有的常量都会进行折叠，只有编译器在程序编译期就可以确定值的常量才可以：
 
-- 基本数据类型( `byte`、`boolean`、`short`、`char`、`int`、`float`、`long`、`double`)以及字符串常量。
+- 基本数据类型( `byte`、`boolean`、`short`、`char`、`int`、`float`、`long`、`double`)以及字符串常量
 - `final` 修饰的基本数据类型和字符串变量
 - 字符串通过 “+”拼接得到的字符串、基本数据类型之间算数运算（加减乘除）、基本数据类型的位运算（<<、>>、>>> ）
 
@@ -199,9 +199,7 @@ String str3 = s1 + s2; // 字符串使用 final 关键字声明之后，可以�
 System.out.println(str1 == str3); // true
 ```
 
-如果 ，编译器在运行时才能知道其确切值的话，就无法对其优化。
-
-示例代码（`str2` 在运行时才能确定其值）：
+如果编译器在运行时才能知道其确切值的话，就无法对其优化，比如以下实例代码，`str2` 在运行时才能确定其值：
 
 ```java
 final String str1 = "str";
