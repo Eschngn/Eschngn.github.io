@@ -12,7 +12,9 @@ tag:
 
 在 Java 中，泛型 (`Generics`) 是 JDK 5 引入的一项强大特性，它允许我们在定义类、接口和方法时，使用类型参数 (`type parameters`)。泛型的核心目的是为了在编译时捕获类型错误，提高代码的类型安全性和可读性，并消除强制类型转换的麻烦。
 
-编译器可以对泛型参数进行检测，并且通过泛型参数可以指定传入的对象类型。比如 `ArrayList<String> persons = new ArrayList<String>()` 这行代码就指明了该 `ArrayList` 对象只能传入 `String` 对象，如果传入其他类型的对象就会报错。
+编译器可以对泛型参数进行检测，并且通过泛型参数可以指定传入的对象类型。
+
+比如 `ArrayList<String> lists = new ArrayList<String>()` 这行代码就指明了该 `ArrayList` 对象只能传入 `String` 对象，如果传入其他类型的对象就会报错。
 
 ```java
 ArrayList<E> extends AbstractList<E>
@@ -22,7 +24,7 @@ ArrayList<E> extends AbstractList<E>
 
 ## 泛型参数
 
-泛型使用尖括号 <> 来定义类型参数，通常使用单个大写字母表示，如 `E (Element)`, `T (Type)`, `K (Key)`, `V (Value)` 等。
+泛型使用尖括号 `<>` 来定义类型参数，通常使用单个大写字母表示，如 `E (Element)`, `T (Type)`, `K (Key)`, `V (Value)` 等。
 
 ## 泛型类
 
@@ -60,6 +62,13 @@ public class Box<T> {
 }
 ```
 
+输出如下：
+
+```tex
+Hello Generics
+123
+```
+
 ## 泛型接口
 
 接口也可以使用泛型，定义了操作类型的规范。
@@ -91,6 +100,13 @@ public class OrderedPair<K, V> implements Pair<K, V> {
     }
 }
 ```
+
+输出如下：
+
+```tex
+MyAge: 30
+```
+
 
 ## 泛型方法
 
@@ -130,7 +146,19 @@ public class GenericMethodDemo {
 }
 ```
 
-⚠️注意：泛型方法的类型参数 `<T>` 放在返回类型之前。
+输出如下：
+
+```tex
+1 2 3 4 5 
+1.1 2.2 3.3 4.4 
+Hello World Java 
+First Integer: 1
+First String: Hello
+```
+
+⚠️注意：
+- 泛型方法的类型参数 `<T>` 放在返回类型之前。
+- `public static <T> void printArray(T[] inputArray)` 一般被称为静态泛型方法;在 Java 中泛型只是一个占位符，必须在传递类型后才能使用。类在实例化时才能真正的传递类型参数，由于静态方法的加载先于类的实例化，也就是说类中的泛型还没有传递真正的类型参数，静态的方法的加载就已经完成了，所以静态泛型方法是没有办法使用类上声明的泛型的。只能使用自己声明的 `<T>`
 
 ## 类型通配符
 
@@ -138,7 +166,7 @@ public class GenericMethodDemo {
 
 ### 上界通配符 `(? extends T)`
 
-表示类型可以是 `T` 或 `T` 的任何子类。用于限制泛型类型为某个类的子类或其自身。主要用于读取`(get)` 数据。
+上界通配符 `(Upper Bounde Wildcard)`，顾名思义，存在一个最上级的界限，即指定一个最高级别的父类，它表示对于该上界类型以及其子类都适用，类型可以是 `T` 或 `T` 的任何子类。用于限制泛型类型为某个类的子类或其自身。主要用于读取`(get)` 数据。
 
 ```java
 public static void printList(List<? extends Number> list) {
@@ -158,22 +186,33 @@ public static void main(String[] args) {
 }
 ```
 
+输出如下：
+
+```tex
+1
+2
+3
+1.1
+2.2
+3.3
+```
+
 我们可以从列表中安全地读取 `Number` 对象，因为任何 `Number` 的子类都可以向上转型为 `Number`。但不能往里面添加元素（除了 `null`），因为不知道确切的子类型是什么。
+
+![添加元素运行会报错](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/picgo/image-20250718092443903.png)
 
 ### 下界通配符 `(? super T)`
 
-表示类型可以是 `T` 或 `T` 的任何超类（父类）。用于限制泛型类型为某个类的超类或其自身。主要用于写入 `(put)` 数据。
+与上界通配符相反，下界通配符 `(Lower Bound Wildcard)`，顾名思义，存在一个最低级的界限，即指定一个最低级别的子类，它表示对于该下界类型以及其父类都适用，类型可以是 `T` 或 `T` 的任何超类（父类）。用于限制泛型类型为某个类的超类或其自身。主要用于写入 `(put)` 数据。
 
 ```java
-public static void addNumbers(List<? super Integer> list) {
-    // 可以向列表中添加 Integer 或 Integer 的子类
+public static void addNumbers(List<? super Number> list) {
+    // 可以向列表中添加 Number 或 Number 的子类（如果有的话）
     list.add(10);
     list.add(20);
     list.add(new Integer(30));
 
-    // Integer x = list.get(0); // 编译错误！无法保证取出的具体类型，只能保证是 Object
-                              // 因为你不知道它具体是 Integer 的哪个父类
-}
+    // Number x = list.get(0); // 编译错误！无法保证取出的具体类型，只能保证是 Object
 
 public static void main(String[] args) {
     List<Number> numbers = new ArrayList<>();
@@ -185,7 +224,14 @@ public static void main(String[] args) {
 }
 ```
 
-我们可以安全地往列表中添加 `Integer` 对象（或其子类），因为 `Integer` 及其子类都可以向上转型为 `Integer` 的任何超类。但不能安全地从中读取，因为只知道它至少是 `Integer` 的一个超类，具体是哪个父类不确定。
+输出如下：
+
+```tex
+[10, 20, 30]
+[10, 20, 30]
+```
+
+我们可以安全地往列表中添加 `Integer` 对象或其子类（如果有的话），因为 `Integer` 及其子类都可以向上转型为 `Integer` 的任何超类。但不能安全地从中读取，因为只知道它至少是 `Integer` 的一个超类，具体是哪个父类不确定。
 
 ### 无界通配符 `(<?>)`
 
@@ -220,11 +266,11 @@ Consumer Super： 如果是消费（接收/写入）数据，使用 `super`（�
 
 Java 泛型在编译时通过类型擦除来实现。在编译后的字节码中，所有的泛型类型参数都会被替换成它们的上界（通常是 `Object`）。
 
-- List<String> 在运行时会变成 List。
+- `List<String>` 在运行时会变成 `List`。
 
-- T 会被替换为 Object。
+- `T` 会被替换为 `Object`。
 
-- T extends Number 会被替换为 Number。
+- `T extends Number` 会被替换为 `Number`。
 
 
 
