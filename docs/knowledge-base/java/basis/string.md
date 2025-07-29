@@ -67,7 +67,7 @@ public final class String
 
 在 JDK 9 之前，Java 的 `char` 类型是 16 位的，这意味着每个字符占用 `2` 个字节（因为它基于 `UTF-16` 编码）。然而，在实际应用中，大部分字符串（尤其是在西方语言环境中）只包含 `ISO-8859-1 (Latin-1)` 字符，这些字符只需要 `8` 位（`1` 个字节）就能表示。JDK 官方也说了绝大部分字符串对象只包含 `Latin-1` 可表示的字符。
 
-![JDK 的官方说明](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/picgo/jdk9-string-latin1.png)
+![JDK 的官方说明](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/jdk9-string-latin1.png)
 
 
 这意味着，对于只包含 `Latin-1` 字符的字符串，旧的 `char[]` 实现会浪费一半的内存空间，因为它为每个字符都分配了 `2` 个字节，即使只需要 `1` 个字节。考虑到 `String` 对象在 Java 应用程序中是使用最频繁的对象之一，这种内存浪费是非常巨大的。
@@ -119,7 +119,7 @@ System.out.println(str3 == str5); // false (一个在堆，一个在常量池)
 System.out.println(str3.equals(str5)); // true (内容相同)
 ```
 
-![字符串常量池](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/picgo/%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%B8%B8%E9%87%8F%E6%B1%A0.png)
+![字符串常量池](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/string-constant-pool.png)
 
 **字符串常量池**是 `JVM` 为了提升性能和减少内存消耗针对字符串（`String` 类）专门开辟的一块区域，主要目的是为了避免字符串的重复创建。
 
@@ -176,7 +176,7 @@ System.out.println(s3 == s1); // false (s1 依然是堆中的那个对象)
 
 在编译过程中，Javac 编译器会进行一个叫做常量折叠(Constant Folding)的代码优化。《深入理解 Java 虚拟机》中有介绍到：
 
-![常量折叠](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/picgo/image-20241014130535051.png)
+![常量折叠](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/constant-folding.png)
 
 常量折叠会把常量表达式的值求出来作为常量嵌在最终生成的代码中，这是 Javac 编译器会对源代码做的极少量优化措施之一(代码优化几乎都在即时编译器中进行)。
 
@@ -228,7 +228,7 @@ System.out.println(s3 == str); // false
 
 上面的代码对应的字节码如下：
 
-![字节码](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/picgo/image-20250714162214566.png)
+![字节码](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/string-bytecode.png)
 
 
 

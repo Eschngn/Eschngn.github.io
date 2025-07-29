@@ -284,7 +284,7 @@ System.out.println(b >>> 1);  // 2147483644（补 0，变成大正数 ，0111110
 | **存储位置** | 位于堆内存中，因为成员变量都属于对象的属性，静态成员变量（static修饰）是属于类级别的变量，它在堆内存中只有一个实例，被该类的所有实例共享 | 位于栈内存中，具体在 Java 虚拟机栈中的局部变量表中 |
 | **生存周期** | 随对象创建而创建，随对象回收而消亡                           | 随方法调用创建，方法结束后销毁                     |
 
-![成员变量与局部变量的区别](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/picgo/variable-difference.png)
+![成员变量与局部变量的区别](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/variable-difference.png)
 
 ## 方法
 

@@ -12,6 +12,8 @@ tag:
 
 Java 的异常体系是一个完善的类层次结构，其基类是 `java.lang.Throwable`。`Throwable` 又派生出两个主要子类：`Error` 和 `Exception`。
 
+![异常类结构层次图](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/throwable.png)
+
 ### `Error`
 
 `Error` 代表了程序中严重的问题，通常是由 JVM 自身、操作系统或硬件问题引起的，比如内存溢出（`OutOfMemoryError`）、栈溢出（`StackOverflowError`）等。

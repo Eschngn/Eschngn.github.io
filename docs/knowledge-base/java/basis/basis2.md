@@ -117,7 +117,7 @@ public interface BasketballPlayer {
 
    因此，接口中的 `static` 方法必须要有方法体：
 
-   ![接口中的 `static` 方法要有方法体](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/picgo/image-20250706153005671.png)
+   ![接口中的 `static` 方法要有方法体](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/interface-static-method-should-have-body.png)
 
 4. 从 **Java 8** 开始，接口中允许定义 `default` 方法，比如上例中的 `printBasketball()` 方法。
 
@@ -129,7 +129,7 @@ public interface BasketballPlayer {
 
    因此，接口中的 `default` 方法也必须要有方法体：
 
-   ![接口中的 `default` 方法要有方法体](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/picgo/image-20250706153111078.png)
+   ![接口中的 `default` 方法要有方法体](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/interface-%20default-method-should-have-body.png)
 
 5. 从 **Java 9** 开始，接口中允许定义 `private` 方法来封装一些重复的逻辑，供默认方法和静态方法调用，提高代码的可读性和可维护性。
 
@@ -306,7 +306,7 @@ Subject 对象内存地址: 356573597
 ```
 可以看到，`originalStudent` 和 `clonedStudent` 的 `subject` 成员指向了同一个 `Subject` 对象，所以修改其中一个会导致另一个也受影响；而 `studentName`、`age` 和 `height` 则相互独立，互不影响。
 
-![浅拷贝 —— 引用的 `Subject` 对象共享](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/picgo/%E6%97%A0%E6%A0%87%E9%A2%98-2025-06-22-1853.png)
+![浅拷贝 —— 引用的 `Subject` 对象共享](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/shallow-copy.png)
 
 ### 深拷贝
 
@@ -417,7 +417,7 @@ SubjectDeep 对象内存地址: 1735600054
 
 现在，修改 `clonedStudent` 的 `subject` 不会影响 `originalStudent` 的 `subject`，因为 `clonedStudent.subject` 是一个全新的 `SubjectDeep` 对象，在内存中与原对象是完全独立的。
 
-![深拷贝 —— 引用的 `Subject` 对象不共享](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/picgo/%E6%B7%B1%E6%8B%B7%E8%B4%9D.png)
+![深拷贝 —— 引用的 `Subject` 对象不共享](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/deep-copy.png)
 
 ### 两者对比
 
@@ -428,7 +428,5 @@ SubjectDeep 对象内存地址: 1735600054
 | 修改影响   | 修改拷贝对象的引用类型成员，会影响原始对象。                 | 修改拷贝对象的任何成员，不影响原始对象。                     |
 | 适用场景   | 1. 对象只包含基本数据类型及其对应包装类型。  2. 对象包含不可变对象（如 String）。 3. 你可以接受共享引用类型成员的风险，或不需要修改它们。 | 1. 对象包含可变的引用类型成员。  2. 需要确保原对象和拷贝对象完全隔离，修改互不影響。 |
 | 实现复杂性 | 简单，直接调用 super.clone()。                               | 复杂，需要递归拷贝所有层级的引用对象。                       |
-
-### 
 
 

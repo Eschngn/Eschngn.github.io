@@ -199,7 +199,7 @@ public static void main(String[] args) {
 
 我们可以从列表中安全地读取 `Number` 对象，因为任何 `Number` 的子类都可以向上转型为 `Number`。但不能往里面添加元素（除了 `null`），因为不知道确切的子类型是什么。
 
-![添加元素运行会报错](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/picgo/image-20250718092443903.png)
+![添加元素运行报错](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/generics-add-element-error.png)
 
 ### 下界通配符 `(? super T)`
 
