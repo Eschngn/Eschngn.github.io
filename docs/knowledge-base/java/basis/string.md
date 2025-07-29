@@ -184,7 +184,7 @@ System.out.println(s3 == s1); // false (s1 依然是堆中的那个对象)
 
 - 基本数据类型( `byte`、`boolean`、`short`、`char`、`int`、`float`、`long`、`double`)以及字符串常量
 - `final` 修饰的基本数据类型和字符串变量
-- 字符串通过 “+”拼接得到的字符串、基本数据类型之间算数运算（加减乘除）、基本数据类型的位运算（<<、>>、>>> ）
+- 字符串通过 `“+”` 拼接得到的字符串、基本数据类型之间算数运算（加减乘除）、基本数据类型的位运算（<<、>>、>>> ）
 
 ```java
 final String s1 = "Hello";
@@ -204,7 +204,7 @@ System.out.println(str1 == str3); // true
 ```java
 final String str1 = "str";
 final String str2 = getStr();
-String c = "str" + "ing";// 常量池中的对象
+String c = "str" + "ing"; // 常量池中的对象
 String d = str1 + str2; // 在堆上创建的新的对象
 System.out.println(c == d); // false
 
