@@ -68,10 +68,10 @@ Class Name: java.lang.String
 假设有以下 `Person` 类：
 
 ```java
-public class Person {
-    private String name;
-    private Integer age;
-    public Integer height;
+public class Person { 
+    private String name;   // 私有字段
+    private Integer age;   // 私有字段
+    public Integer height; // 公有字段
 
     // 无参构造器
     public Person() {
@@ -80,7 +80,7 @@ public class Person {
         height = 180;
     }
 
-    // 有惨构造器
+    // 有参构造器
     public Person(String name, Integer age, Integer height) {
         this.name = name;
         this.age = age;
@@ -216,7 +216,7 @@ Name: Bob
 - `getDeclaredFields()`：返回类自身声明的所有字段（包括私有，不包括继承的）。
 - `setAccessible(true)`：可以突破 `private` 访问限制，但会带来安全风险和性能下降。
 
-2.4 获取和调用方法 `(Methods)`
+## 获取和调用方法
 
 我们可以通过反射获取类的方法信息，并动态调用它们。
 
