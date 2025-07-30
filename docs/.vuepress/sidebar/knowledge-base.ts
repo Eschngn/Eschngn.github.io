@@ -17,7 +17,8 @@ export const knowledgeBase = arraySidebar([
                     "java/basis/modifier",
                     "java/basis/string",
                     "java/basis/exception",
-                    "java/basis/generics"
+                    "java/basis/generics",
+                    "java/basis/reflection"
                 ],
             },
             {
