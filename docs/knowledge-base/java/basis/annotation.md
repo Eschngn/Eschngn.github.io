@@ -38,6 +38,10 @@ Java 语言自身提供了一些标准注解，用于编译器或 JVM 的特定�
 
 元注解 `(Meta-Annotations)` 是用来注解其他注解的注解。它们定义了自定义注解的行为和属性。
 
+`java.lang.annotation` 中提供了元注解，可以使用这些注解来定义自己的注解。
+
+![Java 元注解](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/meta-annotations.png) 
+
 1. `@Target` ：指定自定义注解可以应用于哪些程序元素上，接受一个 `ElementType` 枚举数组，如 `ElementType.TYPE` (类、接口、枚举)、`ElementType.METHOD` (方法)、`ElementType.FIELD` (字段) 等。
 2. `@Retention` ： 指定自定义注解的生命周期，即注解信息在何时可用，接受一个 `RetentionPolicy` 枚举值：
    - `RetentionPolicy.SOURCE`：注解只保留在源代码中，编译后会被丢弃（如 `@Override`）。
@@ -52,3 +56,71 @@ Java 语言自身提供了一些标准注解，用于编译器或 JVM 的特定�
 
 我们可以根据自己的需求创建自定义注解 `（Custom Annotations）`。
 
+`java.lang.reflect.AnnotationElement` 接口则提供了拿到我们自定义注解的功能。注解的处理是通过 Java 反射来处理的.
+反射相关的类 `Class, Method, Field` 都实现了 `AnnotationElement` 接口,如下图所示:
+
+![`AnnotationElement` 实现类图](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/annotation-element-implementation-class.png)
+
+`java.lang.reflect.AnnotationElement` 接口中的方法如下,只要我们通过反射拿到 `Class, Method, Field` 类，就能够通过 `getAnnotation(Class)` 拿到我们想要的注解并取值。
+
+![`AnnotationElement` 中的方法](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/annotation-element-methods.png)
+
+例如下面,自定义一个注解 `MyCustomAnnotation`,在其中定义了3个元素:
+
+```java
+@Target(ElementType.METHOD) // 应用于方法
+@Retention(RetentionPolicy.RUNTIME) // 运行时可见
+@Documented // 包含在 Javadoc 中
+public @interface MyCustomAnnotation {
+    // 元素（成员变量)
+    String value() default "默认值";
+    int count() default 1;
+    String[] tags() default {}; // 数组类型的元素
+}
+```
+
+然后可以将其注解在方法上:
+
+```java
+public class MyService {
+
+    @MyCustomAnnotation(value = "这是一个重要的操作", count = 5, tags = {"core", "business"})
+    public void performOperation() {
+        System.out.println("执行了 MyService 的 performOperation 方法。");
+    }
+
+    @MyCustomAnnotation("另一个操作") // 只有一个 value 元素时可省略元素名
+    public void anotherOperation() {
+        System.out.println("执行了 MyService 的 anotherOperation 方法。");
+    }
+
+    public static void main(String[] args) throws NoSuchMethodException {
+        // 通过反射获取注解信息
+        Class<MyService> serviceClass = MyService.class;
+        Method method = serviceClass.getMethod("performOperation");
+
+        if (method.isAnnotationPresent(MyCustomAnnotation.class)) {
+            MyCustomAnnotation annotation = method.getAnnotation(MyCustomAnnotation.class);
+            System.out.println("方法名: " + method.getName());
+            System.out.println("注解 value: " + annotation.value());
+            System.out.println("注解 count: " + annotation.count());
+            System.out.print("注解 tags: ");
+            for (String tag : annotation.tags()) {
+                System.out.print(tag + " ");
+            }
+            System.out.println();
+        }
+    }
+}
+```
+
+输出如下:
+
+```tex
+方法名: performOperation
+注解 value: 这是一个重要的操作
+注解 count: 5
+注解 tags: core business 
+```
+
+在实际开发应用中,自定义注解通常配合拦截器实现登录校验或者配合 AOP 实现日志打印。
