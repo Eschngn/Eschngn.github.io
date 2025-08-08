@@ -31,6 +31,14 @@ export const knowledgeBase = arraySidebar([
                     "java/collection/collection2",    // Map使用详解
                 ],
             },
+            {
+                text:"并发编程",
+                icon:"hugeicons:threads-ellipse",
+                collapsible: true,
+                children:[
+                    "java/concurrent/volatile",
+                ]
+            },
         ],
     },
     {
