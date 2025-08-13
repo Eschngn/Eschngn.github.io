@@ -1,12 +1,11 @@
 ---
+title: 基础知识2
 sticky: true
 category:
   - Java
 tag:
   - Java基础
 ---
-
-# 基础知识2
 
 ## 面向对象
 

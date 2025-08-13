@@ -1,6 +1,5 @@
 ---
-icon: pen-to-square
-date: 2025-06-15
+title: 校招经历
 category:
   - Essay
 tag:
