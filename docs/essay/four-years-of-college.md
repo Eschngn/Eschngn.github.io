@@ -1,6 +1,5 @@
 ---
 icon: pen-to-square
-date: 2025-06-18
 category:
   - 随笔
 tag:
