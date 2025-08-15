@@ -27,8 +27,16 @@ export const knowledgeBase = arraySidebar([
                 icon: "lucide:container",
                 collapsible: true,
                 children: [
-                    "java/collection/collection1", // List源码分析
-                    "java/collection/collection2",    // Map使用详解
+                    "java/collection/collection1",
+                    "java/collection/collection2",    
+                ],
+            },
+            {
+                text: "IO",
+                icon: "fluent:stream-20-regular",
+                collapsible: true,
+                children: [
+                    "java/io/io1",
                 ],
             },
             {
@@ -51,8 +59,8 @@ export const knowledgeBase = arraySidebar([
                 icon: "lineicons:mysql",
                 collapsible: true,
                 children: [
-                    "database/mysql/index2",   // 索引解析
-                    "database/mysql/explain", // 执行计划详解
+                    "database/mysql/index2",   
+                    "database/mysql/explain", 
                 ],
             },
             {
@@ -60,8 +68,8 @@ export const knowledgeBase = arraySidebar([
                 icon: "devicon-plain:redis",
                 collapsible: true,
                 children: [
-                    "database/redis/redis1",   // 索引解析
-                    "database/redis/redis2", // 执行计划详解
+                    "database/redis/redis1",  
+                    "database/redis/redis2",
                 ],
             }
         ],
