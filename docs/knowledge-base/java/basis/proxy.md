@@ -235,13 +235,13 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-public class DebugInvocationHandler implements InvocationHandler {
+public class SmsInvocationHandler implements InvocationHandler {
     /**
      * 代理类中的真实对象
      */
     private final Object target;
 
-    public DebugInvocationHandler(Object target) {
+    public SmsInvocationHandler(Object target) {
         this.target = target;
     }
 
@@ -268,7 +268,7 @@ public class JdkProxyFactory {
         return Proxy.newProxyInstance(
                 target.getClass().getClassLoader(), // 目标类的类加载器
                 target.getClass().getInterfaces(),  // 代理需要实现的接口，可指定多个
-                new DebugInvocationHandler(target)   // 代理对象对应的自定义 InvocationHandler
+                new SmsInvocationHandler(target)   // 代理对象对应的自定义 InvocationHandler
         );
     }
 }
