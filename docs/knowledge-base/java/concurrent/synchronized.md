@@ -63,3 +63,56 @@ public void increment() {
 - `synchronized` 修饰的方法，无论方法正常执行完毕还是抛出异常，都会释放锁。
 
 ## 实现原理
+
+1. 加锁和释放锁的原理：
+
+   加锁：当线程进入同步块或同步方法时，线程需要获得该对象的监视器锁 （`Monitor Lock`）。这个锁是由 JVM 内部的对象头中的锁标志位来实现的。当一个线程获得锁后，其他线程就无法进入同一个对象的同步块或同步方法，必须等待锁被释放。
+
+   释放锁：线程退出同步块或同步方法后，会自动释放锁（无论是正常退出还是因异常退出）。锁的释放通知其他等待该锁的线程可以竞争锁，等待线程按照一定的顺序重新获得锁并进入同步块。
+
+   锁的获取和释放过程涉及到 JVM 的 `MonitorEnter` 和 `MonitorExit` 指令：
+
+   - `MonitorEnter` 指令：当线程进入同步块时，尝试获取锁。
+   - `MonitorExit` 指令：当线程退出同步块时，释放锁。
+
+   这两个指令我们可以通过查看字节码看到：
+
+   ```java
+   public static void main(String[] args) {
+       Object object = new Object();
+       int count = 0;
+       synchronized (object) {
+           count++;
+       }
+   }
+   ```
+
+   以上 Java 代码的字节码如下图所示：
+
+   ![`synchronized` 字节码](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/picgo/synchronized-bytecode.png)
+
+2. 可重入原理：
+
+   `synchronized` 是可重入的，这意味着同一个线程在持有某个对象的锁时，可以再次进入这个对象上其他被 `synchronized` 修饰的同步方法或同步块，而不会发生死锁。
+
+   这是通过为每个锁维护一个计数器和线程持有者来实现的：
+
+   - 当线程第一次获得锁时，计数器加 `1`，并且记录持有该锁的线程。
+   - 如果同一个线程再次进入同步方法，计数器会再次递增，而不是阻塞。
+   - 当线程退出同步方法时，计数器会递减，直到计数器为 `0` 时，线程才真正释放锁，其他线程才能获取锁。
+
+3. 保证可见性原理
+
+   `synchronized` 还通过内存屏障 （`Memory Barrier`） 机制确保可见性。当一个线程对共享变量进行修改后，其他线程可以看到最新的值，而不会读取到旧值。
+
+   - 进入同步块前：JVM 会将当前线程对共享变量的所有缓存内容刷新到主内存（对应 `MonitorEnter` 指令）。
+
+   - 退出同步块后：JVM 会将修改过的变量从工作内存同步回主内存，并使其他线程的工作内存中这些变量的缓存失效（对应 `MonitorExit` 指令）。
+
+`synchronized` 同步语句块的实现使用的是 `monitorenter` 和 `monitorexit` 指令，其中 `monitorenter` 指令指向同步代码块的开始位置，`monitorexit` 指令则指明同步代码块的结束位置。
+
+`synchronized` 修饰的方法并没有 `monitorenter` 指令和 `monitorexit` 指令，取而代之的是 `ACC_SYNCHRONIZED` 标识，该标识指明了该方法是一个同步方法。如果是实例方法，JVM 会尝试获取实例对象的锁。如果是静态方法，JVM 会尝试获取当前 `class` 的锁
+
+不过两者的本质都是对对象监视器 `monitor` 的获取。
+
+## 锁升级
