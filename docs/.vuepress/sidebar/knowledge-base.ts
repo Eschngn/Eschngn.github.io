@@ -47,6 +47,7 @@ export const knowledgeBase = arraySidebar([
                 collapsible: true,
                 children:[
                     "java/concurrent/volatile",
+                    "java/concurrent/synchronized",
                 ]
             },
         ],
