@@ -54,7 +54,7 @@ public void increment() {
 
 `synchronized` 后面的括号中指定了要锁定的对象，可以是 `this`，也可以是自定义对象或者类的 `Class` 对象（`ClassName.class`）。
 
-通常为一个普通的 `private` 成员变量，如 `private Object object = new Object()`，这样使用了所有该 `object` 对象的同步代码块，在任何时候只能存在一个线程访问。
+锁定的对象通常为一个普通的 `private` 成员变量，如 `private Object object = new Object()`，这样使用了所有该 `object` 对象的同步代码块，在任何时候只能存在一个线程访问。
 
 ⚠️注意：
 
