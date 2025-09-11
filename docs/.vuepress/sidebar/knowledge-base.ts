@@ -29,7 +29,7 @@ export const knowledgeBase = arraySidebar([
                 icon: "lucide:container",
                 collapsible: true,
                 children: [
-                    "java/collection/collection1",
+                    "java/collection/arraylist",
                     "java/collection/collection2",    
                 ],
             },
