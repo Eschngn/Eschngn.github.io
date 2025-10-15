@@ -205,3 +205,164 @@ HotSpot 虚拟机中，对象在内存中存储的布局可以分为三块区域
 这部分数据的长度也随着 JVM 架构的不同而不同：32 位的 JVM 上，长度为 32 位；64 位 JVM 则为 64 位。
 
 64 位 JVM 如果开启 `+UseCompressedOops` 选项，该区域长度也将由 64 位压缩至 32 位。
+
+## 锁升级
+
+Java SE 1.6 为了减少获得锁和释放锁带来的性能消耗，引入了“偏向锁”和“轻量级锁”，在 Java SE 1.6 中，锁一共有 `4` 种状态，级别从低到高依次是：无锁状态、偏向锁状态、轻量级锁状态和重量级锁状态，这几个状态会随着竞争情况逐渐升级。锁可以升级但不能降级，意味着偏向锁升级成轻量级锁后不能降级成偏向锁。这种锁升级却不能降级的策略，目的是为了提高获得锁和释放锁的效率。
+
+### 偏向锁
+
+HotSpot 的作者经过研究发现，大多数情况下，锁不仅不存在多线程竞争，而且总是由同一线程多次获得，为了让线程获得锁的代价更低而引入了偏向锁。
+
+偏向锁的获取:
+
+- 当一个线程访问同步块并获取锁时，会在对象头和栈帧中的锁记录里存储锁偏向的线程 `ID`；
+
+- 以后该线程在进入和退出同步块时不需要进行 CAS 操作来加锁和解锁，只需简单地测试一下对象头的 `Mark Word` 里是否存储着指向当前线程的偏向锁；
+
+- 如果测试成功（ `Mark Word` 中已存储当前线程 ID），表示线程已经获得了锁。如果测试失败（ `Mark Word` 中没有存储当前线程的 ID），则需要再测试一下 `Mark Word` 中偏向锁的标识是否设置成 `1` （表示当前是偏向锁）：如果没有设置，则使用 CAS 竞争锁；如果设置了，则尝试使用 CAS 将对象头的偏向锁指向当前线程。
+
+为了更好的理解，我们使用代码并配合 OpenJDK 官网提供的查看对象内存布局的工具 [JOL (java object layout)](https://github.com/openjdk/jol)来展示偏向锁的获取过程，通过 Maven 引入到项目中：
+
+```xml
+<dependency>
+  <groupId>org.openjdk.jol</groupId>
+  <artifactId>jol-core</artifactId>
+  <version>0.16</version>
+</dependency>
+```
+
+示例代码如下：
+
+```java
+public static void main(String[] args) {
+    Object lock=new Object();
+    log.info("未进入同步块，MarkWord 为：");
+    log.info(ClassLayout.parseInstance(lock).toPrintable());
+    synchronized (lock) {
+        log.info("进入同步块，MarkWord 为：");
+        log.info(ClassLayout.parseInstance(lock).toPrintable());
+    }
+}
+```
+
+运行结果如下：
+
+![MarkWord 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/java-header-markword.png)
+
+为什么主线程获取锁对象之前，这个锁对象是无锁状态 `（non-biasable）` 呢？
+
+我们知道 JDK 1.6 之后默认是开启偏向锁的，但是开启了延迟。原因是 JVM 内部的代码有很多地方用到了 `synchronized`，由于 JVM 启动阶段会创建很多对象，如果一开始就启用偏向锁，会导致频繁撤销偏向锁 `（revocation）`，增加 `safepoint` （全局停顿）次数，反而拖慢启动速度。
+
+我们可以通过参数 `-XX:BiasedLockingStartupDelay=0` 将延迟改为 `0`，但是不建议这么做。
+
+延迟开启偏向锁的源码如下：
+
+![延迟开启偏向锁源码](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-locking-cpp-biased-locking-init.png)
+
+修改示例代码，延迟 5 s 创建对象：
+
+```java
+public static void main(String[] args) throws InterruptedException {
+    Thread.sleep(5000);
+    Object lock=new Object();
+    log.info("未进入同步块，MarkWord 为：");
+    log.info(ClassLayout.parseInstance(lock).toPrintable());
+    synchronized (lock) {
+        log.info("进入同步块，MarkWord 为：");
+        log.info(ClassLayout.parseInstance(lock).toPrintable());
+    }
+    log.info("退出同步块，MarkWord 为：");
+    log.info(ClassLayout.parseInstance(lock).toPrintable());
+
+    Thread thread = new Thread(() -> {
+        log.info("子线程未进入同步块，MarkWord 为：");
+        log.info(ClassLayout.parseInstance(lock).toPrintable());
+        synchronized (lock) {
+            log.info("子线程进入同步块，MarkWord 为：");
+            log.info(ClassLayout.parseInstance(lock).toPrintable());
+        }
+        log.info("子线程退出同步块，MarkWord 为：");
+        log.info(ClassLayout.parseInstance(lock).toPrintable());
+    });
+    thread.start();
+}
+```
+
+运行结果如下：
+
+```bash
+22:09:53.300 [main] INFO com.shawn.test.Test - 主线程未进入同步块，MarkWord 为：
+22:09:56.159 [main] INFO com.shawn.test.Test - java.lang.Object object internals:
+OFF  SZ   TYPE DESCRIPTION               VALUE
+  0   8        (object header: mark)     0x0000000000000005 (biasable; age: 0)
+  8   4        (object header: class)    0xf80001e5
+ 12   4        (object alignment gap)    
+Instance size: 16 bytes
+Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
+
+22:09:56.160 [main] INFO com.shawn.test.Test - 主线程进入同步块，MarkWord 为：
+22:09:56.160 [main] INFO com.shawn.test.Test - java.lang.Object object internals:
+OFF  SZ   TYPE DESCRIPTION               VALUE
+  0   8        (object header: mark)     0x000002339885f005 (biased: 0x000000008ce6217c; epoch: 0; age: 0)
+  8   4        (object header: class)    0xf80001e5
+ 12   4        (object alignment gap)    
+Instance size: 16 bytes
+Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
+
+22:09:56.160 [main] INFO com.shawn.test.Test - 主线程退出同步块，MarkWord 为：
+22:09:56.161 [main] INFO com.shawn.test.Test - java.lang.Object object internals:
+OFF  SZ   TYPE DESCRIPTION               VALUE
+  0   8        (object header: mark)     0x000002339885f005 (biased: 0x000000008ce6217c; epoch: 0; age: 0)
+  8   4        (object header: class)    0xf80001e5
+ 12   4        (object alignment gap)    
+Instance size: 16 bytes
+Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
+
+22:09:56.162 [Thread-2] INFO com.shawn.test.Test - 子线程未进入同步块，MarkWord 为：
+22:09:56.162 [Thread-2] INFO com.shawn.test.Test - java.lang.Object object internals:
+OFF  SZ   TYPE DESCRIPTION               VALUE
+  0   8        (object header: mark)     0x000002339885f005 (biased: 0x000000008ce6217c; epoch: 0; age: 0)
+  8   4        (object header: class)    0xf80001e5
+ 12   4        (object alignment gap)    
+Instance size: 16 bytes
+Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
+
+22:09:56.163 [Thread-2] INFO com.shawn.test.Test - 子线程进入同步块，MarkWord 为：
+22:09:56.163 [Thread-2] INFO com.shawn.test.Test - java.lang.Object object internals:
+OFF  SZ   TYPE DESCRIPTION               VALUE
+  0   8        (object header: mark)     0x000000ec111ff600 (thin lock: 0x000000ec111ff600)
+  8   4        (object header: class)    0xf80001e5
+ 12   4        (object alignment gap)    
+Instance size: 16 bytes
+Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
+
+22:09:56.163 [Thread-2] INFO com.shawn.test.Test - 子线程退出同步块，MarkWord 为：
+22:09:56.163 [Thread-2] INFO com.shawn.test.Test - java.lang.Object object internals:
+OFF  SZ   TYPE DESCRIPTION               VALUE
+  0   8        (object header: mark)     0x0000000000000001 (non-biasable; age: 0)
+  8   4        (object header: class)    0xf80001e5
+ 12   4        (object alignment gap)    
+Instance size: 16 bytes
+Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
+```
+
+这样的运行结果是符合上面说的逻辑的：
+
+1. 主线程进入同步代码块之前，`lock` 对象锁已是可偏向状态 （`biasable`），但 `Mark Word` 中没有存储具体的线程 ID
+2. 主线程进入同步代码块之后，`lock` 对象锁变为已偏向状态 （`biased`），偏向当前主线程，`Mark Word` 中存储当前主线程的 ID
+> 上面这两种状态 `lock` 对象锁的 `Mark Word` 的后三位都是 `101`
+3. 在主线程退出同步代码块后，到子线程（其他新线程）进入同步代码块前，`lock` 对象锁一直都是偏向主线程的状态
+4. 在子线程进入同步代码块、获取 `lock` 对象锁时，由于 `Mark Word` 中存储的不是当前子线程的线程 ID 并且偏向锁标识为 `1`，
+
+偏向锁的撤销：
+
+偏向锁使用了一种等到竞争出现才释放锁的机制，所以当其他线程尝试竞争偏向锁时，持有偏向锁的线程才会释放锁。偏向锁的撤销，需要等待全局安全点（在这个时间点上没有正在执行的字节码）。
+
+- 首先会暂停拥有偏向锁的线程，然后检查持有偏向锁的线程是否活着；
+
+- 如果线程不处于活动状态，则将对象头设置成无锁状态；
+
+- 如果线程仍然活着，拥有偏向锁的栈会被执行，遍历偏向对象的锁记录，栈中的锁记录和对象头的 `Mark Word` 要么重新偏向于其他线程，要么恢复到无锁或者标记对象不适合作为偏向锁，最后唤醒暂停的线程。
+
+
