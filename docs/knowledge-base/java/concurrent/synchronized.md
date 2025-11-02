@@ -222,7 +222,7 @@ HotSpot 的作者经过研究发现，大多数情况下，锁不仅不存在多
 
 - 如果测试成功（ `Mark Word` 中已存储当前线程 ID），表示线程已经获得了锁。如果测试失败（ `Mark Word` 中没有存储当前线程的 ID），则需要再测试一下 `Mark Word` 中偏向锁的标识是否设置成 `1` （表示当前是偏向锁）：如果没有设置，则使用 CAS 竞争锁；如果设置了，则尝试使用 CAS 将对象头的偏向锁指向当前线程。
 
-为了更好的理解，我们使用代码并配合 OpenJDK 官网提供的查看对象内存布局的工具 [JOL (java object layout)](https://github.com/openjdk/jol)来展示偏向锁的获取过程，通过 Maven 引入到项目中：
+为了更好的理解，我们使用代码并配合 OpenJDK 官网提供的查看对象内存布局的工具 [JOL (java object layout)] (https://github.com/openjdk/jol)来展示偏向锁的获取过程，通过 Maven 引入到项目中：
 
 ```xml
 <dependency>
