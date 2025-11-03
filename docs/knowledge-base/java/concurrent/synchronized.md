@@ -235,20 +235,38 @@ HotSpot 的作者经过研究发现，大多数情况下，锁不仅不存在多
 示例代码如下：
 
 ```java
-public static void main(String[] args) {
-    Object lock=new Object();
-    log.info("未进入同步块，MarkWord 为：");
-    log.info(ClassLayout.parseInstance(lock).toPrintable());
-    synchronized (lock) {
-        log.info("进入同步块，MarkWord 为：");
-        log.info(ClassLayout.parseInstance(lock).toPrintable());
+@Slf4j
+public class BiasedLockDemo {
+    public static void main(String[] args) throws InterruptedException {
+        Thread.sleep(5000);
+        Lock lock = new Lock();
+        log.info("抢占锁前 lock 的状态：\n{}",lock.getObjectStruct());
+        Thread thread = new Thread(() -> {
+            synchronized (lock) {
+                log.info("占有锁 lock 的状态：\n{}", lock.getObjectStruct());
+            }
+
+        }, "biased-lock-thread");
+        thread.start();
+        thread.join();
+        log.info("释放锁后 lock 的状态：\n{}", lock.getObjectStruct());
+
+    }
+
+    @Data
+    public static class Lock {
+        private String name;
+
+        public String getObjectStruct() {
+            return ClassLayout.parseInstance(this).toPrintable();
+        }
     }
 }
 ```
 
 运行结果如下：
 
-![MarkWord 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/java-header-markword.png)
+![MarkWord 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-markword.png)
 
 为什么主线程获取锁对象之前，这个锁对象是无锁状态 `（non-biasable）` 呢？
 
