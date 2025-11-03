@@ -232,6 +232,14 @@ HotSpot 的作者经过研究发现，大多数情况下，锁不仅不存在多
 </dependency>
 ```
 
+注意：JDK 1.6 之后默认是开启偏向锁的，但是开启了延迟。原因是 JVM 内部的代码有很多地方用到了 `synchronized`，由于 JVM 启动阶段会创建很多对象，如果一开始就启用偏向锁，会导致频繁撤销偏向锁 `（revocation）`，增加 `safepoint` （全局停顿）次数，反而拖慢启动速度。
+
+我们可以通过参数 `-XX:BiasedLockingStartupDelay=0` 将延迟改为 `0`，但是不建议这么做。
+
+延迟开启偏向锁的源码如下：
+
+![延迟开启偏向锁源码](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-locking-cpp-biased-locking-init.png)
+
 示例代码如下：
 
 ```java
@@ -268,15 +276,13 @@ public class BiasedLockDemo {
 
 ![MarkWord 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-markword.png)
 
-为什么主线程获取锁对象之前，这个锁对象是无锁状态 `（non-biasable）` 呢？
+分析结果：
 
-我们知道 JDK 1.6 之后默认是开启偏向锁的，但是开启了延迟。原因是 JVM 内部的代码有很多地方用到了 `synchronized`，由于 JVM 启动阶段会创建很多对象，如果一开始就启用偏向锁，会导致频繁撤销偏向锁 `（revocation）`，增加 `safepoint` （全局停顿）次数，反而拖慢启动速度。
+- 抢占锁前：锁对象头中的 `Mark Word` 的最后一个字节是 `05`，对应着 `biased+lock` 状态组合，倒数三个 `bit` 是 `101`，也就是偏向锁状态。但是打印出来的结果显示的是 `biasable`，表示锁对象还未锁定、未偏向，也就是“可偏向”的状态；
 
-我们可以通过参数 `-XX:BiasedLockingStartupDelay=0` 将延迟改为 `0`，但是不建议这么做。
+- 占有锁之后：锁对象头中的 `Mark Word` 的最后一个字节还是 `05`，但是输出已经是 `biased`，也就是偏向锁状态了，锁对象头中的 `MarkWord` 已经记录了占有锁的线程 `id`；
 
-延迟开启偏向锁的源码如下：
-
-![延迟开启偏向锁源码](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-locking-cpp-biased-locking-init.png)
+- 释放锁之后：锁对象头中的 `Mark Word` 的最后一个字节还是 `05`，还是偏向锁状态，这是因为锁释放需要一定的开销，而偏向锁是一种乐观锁，它认为还是有很大可能偏向锁的持有线程会继续获取锁，所以不会主动撤销偏向锁状态。
 
 修改示例代码，延迟 5 s 创建对象：
 
