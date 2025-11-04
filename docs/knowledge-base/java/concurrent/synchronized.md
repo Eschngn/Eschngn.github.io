@@ -240,7 +240,7 @@ HotSpot 的作者经过研究发现，大多数情况下，锁不仅不存在多
 
 ![延迟开启偏向锁源码](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-locking-cpp-biased-locking-init.png)
 
-示例代码如下：
+示例代码如下，延迟 5 s 创建对象：
 
 ```java
 @Slf4j
@@ -283,6 +283,59 @@ public class BiasedLockDemo {
 - 占有锁之后：锁对象头中的 `Mark Word` 的最后一个字节还是 `05`，但是输出已经是 `biased`，也就是偏向锁状态了，锁对象头中的 `MarkWord` 已经记录了占有锁的线程 `id`；
 
 - 释放锁之后：锁对象头中的 `Mark Word` 的最后一个字节还是 `05`，还是偏向锁状态，这是因为锁释放需要一定的开销，而偏向锁是一种乐观锁，它认为还是有很大可能偏向锁的持有线程会继续获取锁，所以不会主动撤销偏向锁状态。
+
+思考一个问题：同一个线程重复获取相同的锁，`lock` 对象锁会变成偏向锁，那么如果当前线程结束后，新建一个线程并重新获取 `lock` 锁，`lock` 锁中记录的线程 `id` 是否会被更新成新线程的线程 `id` 实现重偏向呢？
+
+我们直接来看例子：
+
+```java
+@Slf4j
+public class BiasedLockDemo {
+    public static void main(String[] args) throws InterruptedException {
+        Thread.sleep(5000);
+        Lock lock = new Lock();
+        Thread threadA = runThread(lock, "A");
+        Thread threadB = runThread(lock, "B");
+        threadA.start();
+        threadA.join();
+        threadB.start();
+        threadB.join();
+    }
+
+    private static Thread runThread(Lock lock, String threadName) throws InterruptedException {
+        Thread thread = new Thread(() -> {
+            log.info("抢占锁前 lock 的状态：\n{}", lock.getObjectStruct());
+            synchronized (lock) {
+                log.info("占有锁 lock 的状态：\n{}", lock.getObjectStruct());
+            }
+            log.info("释放锁后 lock 的状态：\n{}", lock.getObjectStruct());
+        }, threadName);
+        return thread;
+    }
+
+    @Data
+    public static class Lock {
+        private String name;
+
+        public String getObjectStruct() {
+            return ClassLayout.parseInstance(this).toPrintable();
+        }
+    }
+}
+```
+
+线程 `A` 执行结果：
+
+![线程 A 中对象锁的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/thread-a-lock-markword.png)
+
+线程 `B` 执行结果：
+
+![线程 B 中对象锁的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/thread-b-lock-markword.png)
+
+
+
+
+
 
 修改示例代码，延迟 5 s 创建对象：
 
