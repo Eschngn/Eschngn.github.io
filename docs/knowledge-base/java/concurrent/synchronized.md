@@ -240,7 +240,7 @@ HotSpot 的作者经过研究发现，大多数情况下，锁不仅不存在多
 
 ![延迟开启偏向锁源码](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-locking-cpp-biased-locking-init.png)
 
-示例代码如下，延迟 5 s 创建对象：
+示例代码如下，延迟 5 s 创建对象，保证偏向锁开启：
 
 ```java
 @Slf4j
@@ -331,6 +331,151 @@ public class BiasedLockDemo {
 线程 `B` 执行结果：
 
 ![线程 B 中对象锁的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/thread-b-lock-markword.png)
+
+可以看到，线程 `B` 等到线程 `A` 结束之后获取到了 `lock` 锁，但是锁的状态并没有预想中的仍然保持偏向锁状态，线程 `id` 变为指向线程 `B`，而是直接锁升级成了轻量级锁。
+
+从运行结果上来看，偏向锁更像是“一锤子买卖”，只要偏向了某个线程，后续其他线程尝试获取锁，都会变为轻量级锁，这样的偏向非常局限。事实上并不是这样，接下来我们来看“批量重偏向”。
+
+#### 批量重偏向
+
+批量重偏向（Bulk Rebias）是 JVM 针对类级别（`Class`）的一种偏向锁优化机制。当某个类的很多对象都被不同线程当作锁来使用时，每个对象在第一次被线程获取锁后，都会进入偏向锁状态，并在释放后仍保持偏向状态，这样做有两个目的：
+
+- 一是为了防止短时间内同一个线程再次获取锁时产生额外开销；
+
+- 二是因为撤销偏向锁虽然开销小，但如果要撤销的对象很多，累积起来系统负担也会变大。
+
+现在假设这些已经释放、但仍保持偏向锁状态的对象，又频繁被另一个线程 `B` 来访问。
+
+JVM 这时就面临一个问题：
+
+> 我是否应该立刻把这些对象的 `Mark Word` 改成偏向线程 B 呢？
+
+显然，直接让这些对象重偏向线程 `B` 并不合理 —— 因为 JVM 还不能确定想成 `B` 是否会频繁访问这些对象。
+
+于是 JVM 会先观察一段时间：
+
+假设阈值设为 `20`，那么：
+
+- 当线程 `B` 第 `1～19` 次访问这些对象时，JVM 不会立即重偏向，而是暂时撤销偏向、让锁以轻量级方式运行；
+
+- 当线程 `B` 第 `20` 次再访问时，JVM 认为线程 `B` 很可能会持续访问这个类的对象，于是就触发批量重偏向（`Bulk Rebias`） —— 将该类的所有对象都允许重新偏向新线程。
+
+这样做既能避免频繁撤销偏向锁带来的性能损耗，又能让系统根据运行情况动态调整锁的偏向策略，实现性能与灵活性的平衡。
+
+在命令行中运行命令：`java -XX:+PrintFlagsFinal | grep BiasedLock` 查看偏向锁相关的配置参数:
+
+```bash
+ShawndeMacBook-Pro:~ Shawn$ java -XX:+PrintFlagsFinal | grep BiasedLock
+     intx BiasedLockingBulkRebiasThreshold          = 20                                  {product}
+     intx BiasedLockingBulkRevokeThreshold          = 40                                  {product}
+     intx BiasedLockingDecayTime                    = 25000                               {product}
+     intx BiasedLockingStartupDelay                 = 4000                                {product}
+     bool TraceBiasedLocking                        = false                               {product}
+     bool UseBiasedLocking                          = true                                {product}
+```
+
+其中，`UseBiasedLocking` 以及 `BiasedLockingStartupDelay` 参数之前在延迟开启偏向锁的源码中有看到过，是用来控制系统启动时是否启用偏向锁并且设置偏向锁启动延迟时间的，现在则重点关注 `BiasedLockingBulkRebiasThreshold` 参数：
+
+
+| 参数                                | 释义                   |
+| ----------------------------------- | ---------------------- |
+| BiasedLockingBulkRebiasThreshold=20 | 批量偏向阈值，默认值20 |
+
+如果 JVM 发现同一个类的 `20` 个不同对象的偏向锁都被撤销或重新偏向到了另一个线程，它会触发批量重偏向，让整个类的所有偏向锁都处于重偏向的状态，即这时偏向锁一旦被其他线程获取就立即偏向该线程。
+
+下面通过代码来验证：
+
+```java
+@Slf4j
+public class BiasedLockBulkRebiasDemo {
+    public static void main(String[] args) throws InterruptedException {
+        Thread.sleep(5000);
+        final List<Lock> list = new ArrayList<>();
+        Thread threadA = new Thread(() -> {
+            for (int i = 0; i < 21; i++) {
+                // 生成 21 个锁对象
+                Lock lock = new Lock();
+                list.add(lock);
+                // 获取锁之后都变成了偏向锁，偏向线程 A
+                synchronized (lock) {
+
+                }
+            }
+        });
+
+        Thread threadB = new Thread(() -> {
+            for (int i = 0; i < 20; i++) {
+                Lock lock = list.get(i);
+                // 从 list 当中拿出前 20 个锁对象，都是偏向线程 A
+                log.info("B 加锁前第 {} 次{}", i + 1, ClassLayout.parseInstance(lock).toPrintable());
+                synchronized (lock) {
+                    // 前 19 次撤销偏向锁偏向线程 A，然后升级轻量级锁指向线程 B 线程栈当中的锁记录
+                    // 第 20 次开始重偏向线程 B
+                    log.info("B 加锁中第 {} 次{}", i + 1, ClassLayout.parseInstance(lock).toPrintable());
+                }
+                // 因为前 19 次是轻量级锁，释放之后为无锁不可偏向
+                // 但是第 20 次是偏向锁 偏向线程 B 释放之后依然是偏向线程 B
+                log.info("B 加锁结束第 {} 次{}", i + 1, ClassLayout.parseInstance(lock).toPrintable());
+            }
+        });
+
+        threadA.start();
+        Thread.sleep(1000);
+        threadB.start();
+        Thread.sleep(10000);
+
+        new Thread(() -> {
+            // 从 list 中拿到第 21 个锁对象
+            Lock lock = list.get(20);
+            log.info("C 加锁前{}", Class
+                log.info("C 加锁中{}", ClassLayout.parseInstance(lock).toPrintable());
+            }
+            log.info("C 加锁后{}", ClassLayout.parseInstance(lock).toPrintable());
+        }).start();
+
+        log.info("新产生的对象：{}", ClassLayout.parseInstance(new Lock()).toPrintable());
+    }
+
+    @Data
+    public static class Lock {
+        private String name;
+
+        public String getObjectStruct() {
+            return ClassLayout.parseInstance(this).toPrintable();
+        }
+    }
+}
+```
+
+线程 `B` 前 `19` 次循环运行的结果：
+
+![前 19 把对象锁的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-bulk-rebias-b-markword.png)
+
+线程 `B` 第 `20` 次运行结果：
+
+![第 20 把对象锁的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-bulk-rebias-b-20-markword.png)
+
+线程  `C` 的运行结果：
+
+![第 21 把对象锁的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-bulk-rebias-c-markword.png)
+
+通过结果我们可以发现，在达到批量重偏向阈值后，其他线程再去获取偏向锁，则锁对象会重偏向自己。
+
+生成新的 `Lock` 对象的运行结果：
+
+![新生成的对象锁的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-bulk-rebias-new-lock-markword.png)
+
+在新生成的的 `Lock` 锁对象中，包括第 20 个和第 21 个锁对象中，在发生批量重偏向后，`epoch` 字段都变成了 1
+
+#### epoch
+
+
+
+
+
+
+
+
 
 
 
