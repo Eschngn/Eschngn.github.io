@@ -274,7 +274,7 @@ public class BiasedLockDemo {
 
 运行结果如下：
 
-![MarkWord 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-markword.png)
+![MarkWord 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/lock-biased-markword.png)
 
 分析结果：
 
@@ -420,7 +420,7 @@ public class BiasedLockBulkRebiasDemo {
         });
 
         threadA.start();
-        Thread.sleep(1000);
+        Thread.sleep(10000);
         threadB.start();
         Thread.sleep(10000);
 
@@ -436,13 +436,7 @@ public class BiasedLockBulkRebiasDemo {
         log.info("新产生的对象：{}", ClassLayout.parseInstance(new Lock()).toPrintable());
     }
 
-    @Data
-    public static class Lock {
-        private String name;
-
-        public String getObjectStruct() {
-            return ClassLayout.parseInstance(this).toPrintable();
-        }
+    static class Lock {
     }
 }
 ```
@@ -455,7 +449,7 @@ public class BiasedLockBulkRebiasDemo {
 
 ![第 20 把对象锁的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-bulk-rebias-b-20-markword.png)
 
-线程  `C` 的运行结果：
+线程  `C` 拿到第 `21` 把锁对象的运行结果：
 
 ![第 21 把对象锁的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-bulk-rebias-c-markword.png)
 
@@ -465,9 +459,189 @@ public class BiasedLockBulkRebiasDemo {
 
 ![新生成的对象锁的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-bulk-rebias-new-lock-markword.png)
 
-在新生成的的 `Lock` 锁对象中，包括第 20 个和第 21 个锁对象中，在发生批量重偏向后，`epoch` 字段都变成了 1
+在新生成的的 `Lock` 锁对象中，`epoch` 字段变成了 `1`，同时实现重偏向后的第 `20` 和 `21` 个锁对象的 `epoch` 字段也变成了 `1`
 
 #### epoch
+
+`epoch` 字段是 `Mark Word` 中占 `2 bit` 的字段：
+
+![偏向锁 Mark Word 结构](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-markword.png)
+
+在偏向锁机制中，`epoch` 字段扮演着非常关键的角色，它决定了当前偏向锁在竞争时，是执行重偏向 （`Rebias`），还是直接锁升级（升级为轻量级锁）。
+
+每个 `Class` 类在 JVM 中都会维护一个 偏向锁撤销计数器。只要该类的任意对象发生了偏向撤销（即偏向锁失效），计数器就会加 `1`。当计数器的值达到设定阈值（默认 `20`，由参数 `-XX:BiasedLockingBulkRebiasThreshold=20` 控制）时，JVM 认为该类的偏向锁不再适合当前线程模式，因此会触发批量重偏向 （`Bulk Rebias`） 操作。
+
+JVM 利用 `epoch` 字段实现了“懒更新”机制，以避免直接修改每个对象的 `Mark Word`：
+
+- 每个 `Class` 类维护一个 `epoch` 值；
+
+- 每个处于偏向锁状态的对象，其对象头 （`Mark Word`） 中也包含一个 `epoch`；
+
+- 当对象被创建时，会将当前类的 `epoch` 拷贝到自己的 `Mark Word` 中（此时两者相等）。
+
+当发生批量重偏向时：
+
+1. JVM 会将该类的 `epoch` 值加 `1`；
+
+2. 然后扫描所有线程栈，找到此类中仍然处于锁定状态的对象，将它们的 `epoch` 同步更新为新值；
+
+3. 而那些未被持有的偏向锁对象（虽然对象头中还有旧线程 `ID`，但当前并未上锁）保持原样不变。
+
+当新的线程尝试获取一个偏向锁对象时，JVM 会检查对象头中的 `epoch` 与类的 `epoch` 是否一致：
+
+- 如果两者不一致：说明对象的偏向信息已经过期（属于旧纪元），此时会触发重偏向 （`Rebias`） 操作，让对象偏向新线程，并将该对象的 `epoch` 值加 `1`。
+
+- 如果两者一致：表示偏向信息仍然有效，但又有其他线程来竞争锁，那么锁会直接升级为轻量级锁。
+
+比如前面的示例代码中，前 `19` 次线程 `B` 去获取偏向线程 `A` 的对象锁时，`Lock` 类的 `epoch` 仍为 `0`，对象头的 `epoch` 也为 `0`，由于线程 `B` 与锁对象头的偏向线程不一致，因此会触发偏向撤销，锁升级为轻量级锁，释放之后变为无锁 （`non-biasable`）。同时，`Lock` 类的撤销计数器 `+1`。
+
+第 `20` 次线程 `B` 去获取偏向线程 `A` 的对象锁时，计数器达到阈值，JVM 触发批量重偏向，将 `Lock` 类的 `epoch` 从 `0` 改为 `1`。
+
+从此刻起：
+
+- 新创建的 `Lock` 对象会默认携带 `epoch = 1` 并且时可偏向状态 （`biasable`）
+
+- 旧的偏向锁对象（前 `19` 个锁对象都变为无锁了，这个例子中只有第 `20` 和 `21` 个是偏向锁对象）虽然还是偏向线程 `A`，但因为 `epoch` 过期，之后再被线程 `B` 和线程 `C` 获取锁时，就会被自动重偏向到线程 `B` 和线程 `C`，然后将这两个锁对象的 `epoch` 字段加 `1`
+
+#### 批量撤销
+
+当 JVM 发现某个类的 偏向锁（`Biased Lock`）机制带来的优化反而失效，比如：
+
+> 大量对象不断在多个线程之间交替加锁、解锁、重新偏向。
+
+此时，继续允许偏向锁存在已经没有意义了,因为频繁撤销偏向锁的成本比直接用轻量级锁还高。
+
+所以 JVM 决定干脆取消该类的所有对象的偏向锁功能，让它们以后直接使用轻量级锁或重量级锁。
+
+这个过程就叫 批量撤销（`Bulk Revoke`）。
+
+| 参数                                | 释义                   |
+| ----------------------------------- | ---------------------- |
+| BiasedLockingBulkRevokeThreshold=40 | 批量撤销阈值，默认值40 |
+
+当撤销计数器达到阈值（默认 `40`）时（即 `BiasedLockingBulkRevokeThreshold=40`），JVM 认为这个类的偏向锁机制彻底没用了，于是触发“批量撤销”。
+
+当发生批量撤销时：
+
+1. JVM 会暂停所有线程（`Stop The World`）
+
+2. 找到目标类（`Class`）及其所有实例对象
+
+3. 将这些对象的 `Mark Word` 中的偏向锁标志位清除，即修改 `Mark Word` 中的 “是否启用偏向锁” 位为 `0`
+
+4. 同时将该类的 `Class` 元数据（`Klass`） 中的“是否启用偏向锁标志”也设为 `false`
+
+5. 之后，新创建的该类对象，也不会再使用偏向锁，而是直接进入轻量级锁流程
+
+下面通过代码来验证：
+
+```java
+@Slf4j
+public class BulkRevokeDemo {
+
+    private static Thread threadA;
+    private static Thread threadB;
+    private static Thread threadC;
+
+    public static void main(String[] args) throws Exception {
+        // 让偏向锁机制完全生效（默认延迟 4s 开启）
+        Thread.sleep(5000);
+
+        final List<Lock> lockList = new ArrayList<>();
+
+        // 线程 A：创建 40 个对象，并全部偏向线程 A
+        threadA = new Thread(() -> {
+            for (int i = 0; i < 40; i++) {
+                Lock lock = new Lock();
+                synchronized (lock) {
+                    lockList.add(lock);
+                }
+            }
+            log.info("=== 线程A创建完40个偏向A的锁对象 ===");
+            LockSupport.unpark(threadB);
+        }, "Thread-A");
+
+        // 线程 B：竞争锁 -> 触发批量重偏向
+        threadB = new Thread(() -> {
+            LockSupport.park(); // 等待线程 A 完成
+
+            log.info("=== 线程B开始竞争锁 ===");
+            for (int i = 0; i < 40; i++) {
+                Lock lock = lockList.get(i);
+                log.info("B 加锁前第 {} 次:\n{}", i + 1, ClassLayout.parseInstance(lock).toPrintable());
+                synchronized (lock) {
+                    // 第 20 次开始重偏向线程 B，然后将 epoch + 1
+                    log.info("B 加锁中第 {} 次:\n{}", i + 1, ClassLayout.parseInstance(lock).toPrintable());
+                }
+                log.info("B 加锁结束第 {} 次:\n{}", i + 1, ClassLayout.parseInstance(lock).toPrintable());
+            }
+
+            // 第 20 次发生了重偏向以后，Lock 类的 epoch 字段变成了 1，新生成的对象中的 epoch 字段也是 1
+            log.info("B 新创建对象:\n{}", ClassLayout.parseInstance(new Lock()).toPrintable());
+
+            LockSupport.unpark(threadC);
+        }, "Thread-B");
+
+        // 线程 C：再次竞争 -> 触发批量撤销
+        threadC = new Thread(() -> {
+            LockSupport.park(); // 等待线程 B 完成
+
+            log.info("=== 线程C开始竞争锁 ===");
+            // list 数组 20 坐标以前是轻量级锁
+            // 20 以及 20 以后是偏向线程 B 的偏向锁，所以从 20 坐标开始
+            for (int i = 20; i < 40; i++) {
+                Lock lock = lockList.get(i);
+                log.info("C 加锁前第 {} 次:\n{}", i - 19, ClassLayout.parseInstance(lock).toPrintable());
+                synchronized (lock) {
+                    //由于 epoch 相同都是 1，全升级成了轻量级锁
+                    log.info("C 加锁中第 {} 次:\n{}", i - 19, ClassLayout.parseInstance(lock).toPrintable());
+                }
+                log.info("C 加锁结束第 {} 次:\n{}", i - 19, ClassLayout.parseInstance(lock).toPrintable());
+            }
+
+            // 线程 C 再发生偏向锁撤销 20 次，达到批量撤销的阈值
+            // 此时创建的对象应当都是无锁状态
+            log.info("C 新创建对象:\n{}", ClassLayout.parseInstance(new Lock()).toPrintable());
+        }, "Thread-C");
+
+        // 启动
+        threadA.start();
+        threadB.start();
+        threadC.start();
+
+        threadC.join();
+    }
+
+    @Data
+    public static class Lock {
+        private String name;
+    }
+}
+```
+
+运行结果如下：
+
+线程 `B` 的前 `20` 次运行结果，从第 `1` 个锁对象到第 `19` 个锁对象的偏向锁都被撤销，升级到了轻量级锁，释放后变成了无锁状态:
+
+![线程 B 获取前 20 个锁对象的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-bulk-revoke-b-1-20-markword.png)
+
+
+线程 `B` 获取第 `20` 个偏向锁时到达批量重偏向阈值，它和前 `19` 次不一样，这时发生了批量重偏向，锁对象重偏向于线程 `B`，并且释放之后也保持偏向线程 `B` 的状态；之后的 `21` 到 `40` 也都这样:
+
+![线程 B 获取后 20 个锁对象的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-bulk-revoke-b-21-40-markword.png)
+
+接着看线程 `C`，线程 `C` 从第 `21` 个锁对象开始，取出来的锁对象肯定都是偏向线程 `B` 的偏向锁，线程 `C` 尝试获取这些锁会导致偏向锁撤销并升级成轻量级锁，第 `21` 到 `40` 的输出都和 `40` 输出类似，以 `40` 为例输出如下:
+
+![线程 C 获取后 20 个锁对象的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-bulk-revoke-c-1-20-markword.png)
+
+因为线程 `C` 第 `20` 次获取 `list` 中的第 `40` 个偏向锁对象，已累计撤销计数 `20` 次，再加上前面线程 `B` 撤销的 `20` 次，会达到 `40` 次，也就是偏向锁撤销的阈值，所以后面再创建对象，会是无锁状态：
+
+![线程 C 生成新的锁对象的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-bulk-revoke-new-lock-markword.png)
+
+
+
+
+
 
 
 
