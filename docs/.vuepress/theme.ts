@@ -33,7 +33,7 @@ export default hopeTheme({
   pageInfo: ["Author", "Category", "Tag", "Original", "Word", "ReadingTime"],
   // 博客相关
   blog: {
-    description: "一个软件开发者",
+    description: "个人邮箱：ScoMorii@163.com",
     intro: "/intro.html",
     medias: {
       //Baidu: "https://example.com",
