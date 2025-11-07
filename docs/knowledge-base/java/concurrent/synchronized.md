@@ -630,13 +630,91 @@ public class BulkRevokeDemo {
 
 ![线程 B 获取后 20 个锁对象的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-bulk-revoke-b-21-40-markword.png)
 
-接着看线程 `C`，线程 `C` 从第 `21` 个锁对象开始，取出来的锁对象肯定都是偏向线程 `B` 的偏向锁，线程 `C` 尝试获取这些锁会导致偏向锁撤销并升级成轻量级锁，第 `21` 到 `40` 的输出都和 `40` 输出类似，以 `40` 为例输出如下:
+接着看线程 `C`，线程 `C` 从第 `21` 个锁对象开始，取出来的锁对象肯定都是偏向线程 `B` 的偏向锁，并且第 `21` 个到 第 `40` 个锁对象的 `epoch` 字段与 `Lock` 类的 `epoch` 字段相同，处于新纪元，所以线程 `C` 尝试获取这些锁会导致偏向锁撤销并升级成轻量级锁，第 `21` 到 `40` 的输出都和 `40` 输出类似，以 `40` 为例输出如下:
 
 ![线程 C 获取后 20 个锁对象的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-bulk-revoke-c-1-20-markword.png)
 
 因为线程 `C` 第 `20` 次获取 `list` 中的第 `40` 个偏向锁对象，已累计撤销计数 `20` 次，再加上前面线程 `B` 撤销的 `20` 次，会达到 `40` 次，也就是偏向锁撤销的阈值，所以后面再创建对象，会是无锁状态：
 
 ![线程 C 生成新的锁对象的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-bulk-revoke-new-lock-markword.png)
+
+#### 批量撤销冷静期
+
+之前在命令行中打印出来的偏向锁相关的参数中，还有一个 `BiasedLockingDecayTime`,它控制了批量撤销之后，偏向锁功能重新启用的延迟时间。
+
+
+| 参数                         | 释义             |
+| ---------------------------- | ---------------- |
+| BiasedLockingDecayTime=25000 | 批量撤销时间阈值 |
+
+这个参数的意思是：
+
+1. 如果在距离上次批量重偏向发生的 `25` 秒之内，并且累计撤销计数达到 `40`，就会发生批量撤销，该类的偏向锁功能彻底被禁用
+
+2. 如果在距离上次批量重偏向发生超过 `25` 秒（包括）之外，撤销计数器就会重置在 `[20, 40)` 内的计数
+
+可以在前面的批量撤销演示代码中在线程 `C` 中加入延迟操作验证这个问题，让线程 `C` 暂停 `24，25，26` 秒后打印新的锁对象的 `Mark Word` 布局：
+
+```java
+threadC = new Thread(() -> {
+LockSupport.park(); // 等待线程 B 完成
+// TODO 尝试停止线程 26 秒钟、25 秒钟、24 秒钟观察最终的输出结果
+long decayTime = 24000;
+log.info("=== 线程C开始竞争锁 ===");
+// list 数组 20 坐标以前是轻量级锁
+// 20 以及 20 以后是偏向线程 B 的偏向锁，所以从 20 坐标开始
+for (int i = 20; i < 40; i++) {
+    if (i == 39) {
+        try {
+            Thread.sleep(decayTime);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    Lock lock = lockList.get(i);
+    log.info("C 加锁前第 {} 次:\n{}", i - 19, ClassLparseInstance(lock).toPrintable());
+    synchronized (lock) {
+        //由于 epoch 相同都是 1，全升级成了轻量级锁
+        log.info("C 加锁中第 {} 次:\n{}", i - 19, ClassLparseInstance(lock).toPrintable());
+    }
+    log.info("C 加锁结束第 {} 次:\n{}", i - 19, ClassLparseInstance(lock).toPrintable());
+}
+
+// 线程 C 再发生偏向锁撤销 20 次，达到批量撤销的阈值
+// 此时创建的对象应当都是无锁状态
+log.info("线程停止{}毫秒后，C 新创建对象:\n{}", decayClassLayout.parseInstance(new Lock()).toPrintable());
+}, "Thread-C");
+```
+
+三次运行结果如下：
+
+线程停止 `24` 秒：
+
+![停止 24 秒后新锁对象的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-locking-decay-time-24-markword.png)
+
+线程停止 `25` 秒：
+
+![停止 25 秒后新锁对象的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-locking-decay-time-25-markword.png)
+
+线程停止 `26` 秒：
+
+![停止 26 秒后新锁对象的 Mark Word 布局](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-locking-decay-time-26-markword.png)
+
+会发现暂停 `25` 秒钟、`26` 秒钟之后，线程 `C` 最终创建的锁对象都是可偏向的状态，而暂停 `24` 秒钟，则线程 `C` 最终创建的锁对象变成了不可偏向的无锁状态。
+
+#### 总结
+
+我跟据自己的理解，画了张流程图展示偏向锁锁状态的转化过程，可能不严谨会有错误，如果有错误请发送至我主页留的邮箱，非常感谢～
+
+![偏向锁转化全流程](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-process.jpg)
+
+偏向锁在 JDK 15 及其以后的版本已经被废弃（注意是废弃，而非移除）。
+
+当然，你发任你发，我用 Java 8，作为开发，多了解一些总是没错的，嘿嘿嘿嘿～
+
+
+
+
 
 
 
