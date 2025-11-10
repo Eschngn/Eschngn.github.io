@@ -7,6 +7,8 @@ import sidebar from "./sidebar/index.js";
 export default hopeTheme({
   hostname: "https://mister-hope.github.io",
 
+  lastUpdated: true,
+
   author: {
     name: "Shawn"
     //url: "https://mister-hope.com",
@@ -17,6 +19,8 @@ export default hopeTheme({
   repo: "https://github.com/Eschngn/Eschngn.github.io",
 
   docsDir: "docs",
+
+  docsBranch: "master",
 
   favicon: "https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/favicon.ico",
 
@@ -182,7 +186,7 @@ export default hopeTheme({
     icon: {
       assets: "iconify"
     },
-    slimsearch:true,
+    slimsearch: true,
 
     // 如果你需要 PWA。安装 @vuepress/plugin-pwa 并取消下方注释
     // pwa: {
