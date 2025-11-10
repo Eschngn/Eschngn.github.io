@@ -704,7 +704,7 @@ log.info("线程停止{}毫秒后，C 新创建对象:\n{}", decayClassLayout.pa
 
 #### 总结
 
-我跟据自己的理解，画了张流程图展示偏向锁锁状态的转化过程，可能不严谨会有错误，如果有错误请指出发送至我主页留的邮箱，我好做更正，非常感谢～
+我跟据自己的理解，画了张流程图展示偏向锁锁状态的转化过程：
 
 ![偏向锁转化全流程](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/biased-lock-process.jpg)
 
