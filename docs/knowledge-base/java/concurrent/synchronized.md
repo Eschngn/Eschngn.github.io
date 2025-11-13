@@ -854,6 +854,61 @@ JVM 也是同样的逻辑：
 
 [Java多线程：objectMonitor 源码解读](https://juejin.cn/post/7255230505409527863)
 
+下面我们来看代码示例：
+
+```java
+@Slf4j
+public class HeavyweightLockDemo {
+    @Data
+    public static class LockObject {
+        private String name;
+    }
+
+    public static void main(String[] args) throws Exception {
+        Thread.sleep(5000);
+
+        LockObject lock = new LockObject();
+
+        log.info("初始状态:{}", ClassLayout.parseInstance(lock).toPrintable());
+
+        Thread t1 = new Thread(() -> {
+            synchronized (lock) {
+                try {
+                    log.info("T1 获得锁：{}", ClassLayout.parseInstance(lock).toPrintable());
+                    Thread.sleep(3000); // 模拟持锁时间较长
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        Thread t2 = new Thread(() -> {
+            try {
+                Thread.sleep(1000); // 等待 T1 先持有锁
+                synchronized (lock) {
+                    log.info("T2 获得锁:{}", ClassLayout.parseInstance(lock).toPrintable());
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        t1.start();
+        t2.start();
+        t1.join();
+        t2.join();
+
+        log.info("执行结束后:{}", ClassLayout.parseInstance(lock).toPrintable());
+    }
+}
+```
+
+运行结果如下：
+
+![重量级锁的 Mark Word](https://chengliuxiang.oss-cn-hangzhou.aliyuncs.com/blog/heavy-weight-lock-mark-word.png)
+
+通过结果可以发现，当多个线程竞争锁，且有线程被阻塞时，锁会升级为重量级锁。
+
 
 
 
